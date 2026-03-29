@@ -1,19 +1,11 @@
 import { fetchApi } from '@libs/fetch';
 import { Parser } from 'htmlparser2';
-import { HTMLParser2Util, Plugin } from '@/types/plugin';
+import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { load as loadCheerio } from 'cheerio';
 
-enum ParseNovelAction {
-  Unknown = 'Unknown',
-  GetName = 'GetName',
-  GetSummary = 'GetSummary',
-  GetInfos = 'GetInfos',
-  GetGenres = 'GetGenres',
-  GetCover = 'GetCover',
-  GetVolumes = 'GetVolumes',
-}
+const HAKO_MIRRORS = ['https://ln.hako.vn', 'https://docln.sbs'] as const;
 
 const BASE64_ALPHABET =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -181,7 +173,39 @@ class HakoPlugin implements Plugin.PluginBase {
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
   site = 'https://ln.hako.vn';
-  version = '1.1.2';
+  version = '1.1.3';
+
+  private fetchHtmlFromMirrors(
+    path: string,
+    validator?: (html: string) => boolean,
+  ): Promise<string> {
+    const hosts = [this.site, ...HAKO_MIRRORS.filter(host => host !== this.site)];
+    let fallbackHtml = '';
+
+    const tryHost = (index: number): Promise<string> => {
+      if (index >= hosts.length) {
+        return Promise.resolve(fallbackHtml);
+      }
+
+      return fetchApi(hosts[index] + path)
+        .then(res => (res.ok ? res.text() : ''))
+        .catch(() => '')
+        .then(html => {
+          if (html && !fallbackHtml) {
+            fallbackHtml = html;
+          }
+
+          if (html && (!validator || validator(html))) {
+            return html;
+          }
+
+          return tryHost(index + 1);
+        });
+    };
+
+    return tryHost(0);
+  }
+
   parseNovels(url: string) {
     return fetchApi(url)
       .then(res => res.text())
@@ -252,341 +276,79 @@ class HakoPlugin implements Plugin.PluginBase {
       genres: '',
       status: '',
     };
-    const chapters: Plugin.ChapterItem[] = [];
-    const getNameHandler: HTMLParser2Util.Handler = {
-      isDone: false,
-      isStarted: false,
-      onopentag(name) {
-        if (name === 'a') {
-          this.isStarted = true;
-        }
-      },
-      ontext(data) {
-        novel.name += data;
-      },
-      onclosetag() {
-        if (this.isStarted) {
-          this.isDone = true;
-        }
-      },
-    };
-    const getSummaryHandler: HTMLParser2Util.Handler & {
-      newLine: boolean;
-    } = {
-      newLine: false,
-      ontext(data) {
-        if (this.newLine) {
-          this.newLine = false;
-          novel.summary += '\n' + data;
-        } else {
-          novel.summary += data;
-        }
-      },
-      onclosetag() {
-        this.newLine = true;
-      },
-    };
-    const getGenresHandler: HTMLParser2Util.Handler = {
-      ontext(data) {
-        novel.genres += data;
-      },
-    };
-    enum InfoItem {
-      Author,
-      Artist,
-      Status,
-      Unknown,
-    }
-    const getInfosHandler: HTMLParser2Util.Handler & { info: InfoItem } = {
-      isStarted: false,
-      info: InfoItem.Unknown,
-      onopentag(name, attribs) {
-        if (attribs['class'] === 'info-item') {
-          switch (this.info) {
-            case InfoItem.Unknown:
-              if (!novel.author) {
-                this.info = InfoItem.Author;
-              }
-              break;
-            case InfoItem.Author:
-              this.info = InfoItem.Artist;
-              break;
-            case InfoItem.Artist:
-              this.info = InfoItem.Status;
-              break;
-            // we dont need the other info (if exist)
-            case InfoItem.Status:
-              this.info = InfoItem.Unknown;
-              break;
-            default:
-              break;
-          }
-        }
-        if (name === 'a') {
-          this.isStarted = true;
-        }
-      },
-      ontext(data) {
-        if (this.isStarted) {
-          switch (this.info) {
-            case InfoItem.Author:
-              novel.author += data;
-              break;
-            case InfoItem.Artist:
-              novel.artist += data;
-              break;
-            case InfoItem.Status:
-              novel.status += data;
-              break;
-            default:
-              break;
-          }
-        }
-      },
-      onclosetag(name) {
-        if (this.isStarted) {
-          this.isStarted = false;
-        }
-        if (name === 'a' && this.info === InfoItem.Status) {
-          this.isDone = true;
-        }
-      },
-    };
-    const getChapterListHandler: HTMLParser2Util.Handler & {
-      currentVolume: string;
-      num: number;
-      part: number;
-      readingTime: boolean;
-      tempChapter: Plugin.ChapterItem;
-    } = {
-      currentVolume: '',
-      num: 0,
-      part: 1,
-      isStarted: false,
-      readingTime: false,
-      tempChapter: {} as Plugin.ChapterItem,
-      onopentag(name, attribs) {
-        if (this.isStarted) {
-          if (name === 'a' && attribs['title'] !== null) {
-            const chapterName = attribs['title'];
-            let chapterNumber = Number(
-              chapterName.match(/Chương\s*(\d+)/i)?.[1],
-            );
-            if (chapterNumber) {
-              if (this.num === chapterNumber) {
-                chapterNumber = this.num + this.part / 10;
-                this.part += 1;
-              } else {
-                this.num = chapterNumber;
-                this.part = 1;
-              }
-            } else {
-              chapterNumber = this.num + this.part / 10;
-              this.part++;
-            }
-            this.tempChapter = {
-              path: attribs['href'],
-              name: chapterName,
-              page: this.currentVolume,
-              chapterNumber: chapterNumber,
-            };
-          } else if (attribs['class'] === 'chapter-time') {
-            this.readingTime = true;
-          }
-        }
-      },
-      ontext(data) {
-        if (this.readingTime) {
-          const releaseTime = parseDmyToIso(data);
-          if (releaseTime) {
-            this.tempChapter.releaseTime = releaseTime;
-          }
-          if (this.tempChapter.path && this.tempChapter.name) {
-            chapters.push(this.tempChapter);
-          }
-          this.readingTime = false;
-          this.tempChapter = {} as Plugin.ChapterItem;
-        }
-      },
-      onclosetag() {
-        if (this.readingTime) this.readingTime = false;
-      },
-    };
-    const getVolumesHandler: HTMLParser2Util.Handler & {
-      isParsingChapterList: boolean;
-    } = {
-      isStarted: false,
-      isDone: false,
-      isParsingChapterList: false,
-      onopentag(name, attribs) {
-        if (attribs['class'] === 'sect-title') {
-          this.isStarted = true;
-          getChapterListHandler.currentVolume = '';
-        }
-        if (name === 'ul') {
-          getChapterListHandler.isStarted = true;
-          getChapterListHandler.num = 0;
-          getChapterListHandler.part = 1;
-        }
-        getChapterListHandler.onopentag?.(name, attribs);
-      },
-      ontext(data) {
-        if (this.isStarted) {
-          getChapterListHandler.currentVolume += data.trim();
-        }
-        getChapterListHandler.ontext?.(data);
-      },
-      onclosetag(name, isImplied) {
-        getChapterListHandler.onclosetag?.(name, isImplied);
-        this.isStarted = false;
-        if (name === 'ul') {
-          getChapterListHandler.isStarted = false;
-        }
-      },
-    };
-    const parseNovelRouter: HTMLParser2Util.HandlerRouter<ParseNovelAction> = {
-      handlers: {
-        Unknown: undefined,
-        GetName: getNameHandler,
-        GetCover: undefined,
-        GetSummary: getSummaryHandler,
-        GetGenres: getGenresHandler,
-        GetInfos: getInfosHandler,
-        GetVolumes: getVolumesHandler,
-      },
-      action: ParseNovelAction.Unknown,
-      onopentag(name, attribs) {
-        if (attribs['class'] === 'series-name') {
-          this.action = ParseNovelAction.GetName;
-        } else if (!novel.cover && attribs['class']?.includes('img-in-ratio')) {
-          const background = attribs['style'];
-          if (background) {
-            novel.cover = background.substring(
-              background.indexOf('http'),
-              background.length - 2,
-            );
-          }
-        } else if (attribs['class'] === 'summary-content') {
-          this.action = ParseNovelAction.GetSummary;
-        } else if (attribs['class'] === 'series-gerne-item') {
-          this.action = ParseNovelAction.GetGenres;
-        } else if (attribs['class'] === 'info-item') {
-          this.action = ParseNovelAction.GetInfos;
-        } else if (attribs['class']?.includes('volume-list')) {
-          this.action = ParseNovelAction.GetVolumes;
-        }
-      },
-      onclosetag(name) {
-        switch (this.action) {
-          case ParseNovelAction.GetName:
-            if (this.handlers.GetName?.isDone) {
-              this.action = ParseNovelAction.Unknown;
-            }
-            break;
-          case ParseNovelAction.GetSummary:
-            if (name === 'div') {
-              this.action = ParseNovelAction.Unknown;
-            }
-            break;
-          case ParseNovelAction.GetGenres:
-            this.action = ParseNovelAction.Unknown;
-            novel.genres += ',';
-            break;
-          case ParseNovelAction.GetInfos:
-            if (this.handlers.GetInfos?.isDone) {
-              this.action = ParseNovelAction.Unknown;
-            }
-            break;
-          case ParseNovelAction.GetVolumes:
-            if (this.handlers.GetVolumes?.isDone) {
-              this.action = ParseNovelAction.Unknown;
-            }
-            break;
-          default:
-            break;
-        }
-      },
-    };
-    return fetchApi(this.site + novelPath)
-      .then(res => res.text())
+    return this.fetchHtmlFromMirrors(
+      novelPath,
+      html => loadCheerio(html)('.volume-list .list-chapters li').length > 0,
+    )
       .then(html => {
-        const parser = new Parser({
-          onopentag(name, attributes) {
-            parseNovelRouter.onopentag?.(name, attributes);
-            if (parseNovelRouter.action) {
-              parseNovelRouter.handlers[parseNovelRouter.action]?.onopentag?.(
-                name,
-                attributes,
-              );
-            }
-          },
-          ontext(data) {
-            if (parseNovelRouter.action) {
-              parseNovelRouter.handlers[parseNovelRouter.action]?.ontext?.(
-                data,
-              );
-            }
-          },
-          onclosetag(name, isImplied) {
-            if (parseNovelRouter.action) {
-              parseNovelRouter.handlers[parseNovelRouter.action]?.onclosetag?.(
-                name,
-                isImplied,
-              );
-            }
-            parseNovelRouter.onclosetag?.(name, isImplied);
-          },
-        });
-
-        parser.write(html);
-        parser.end();
-
         const $ = loadCheerio(html);
-        const infoItems = $('.series-information .info-item');
-        if (infoItems.length) {
-          novel.author = '';
-          novel.artist = '';
-          novel.status = '';
 
-          infoItems.each((_, element) => {
-            const item = $(element);
-            const label = item
-              .find('.info-name')
-              .first()
-              .text()
-              .toLowerCase()
-              .trim();
-            const value = item
-              .find('.info-value')
-              .first()
-              .text()
-              .replace(/\s+/g, ' ')
-              .trim();
+        novel.name = $('.series-name').first().text().trim();
+        novel.summary =
+          $('.summary-content').first().text().replace(/\s+\n/g, '\n').trim() ||
+          '';
 
-            if (!value) {
-              return;
-            }
-
-            if (!novel.author && label.includes('tác giả')) {
-              novel.author = value;
-              return;
-            }
-
-            if (
-              !novel.artist &&
-              (label.includes('họa sĩ') ||
-                label.includes('hoạ sĩ') ||
-                label.includes('artist'))
-            ) {
-              novel.artist = value;
-              return;
-            }
-
-            if (!novel.status && label.includes('tình trạng')) {
-              novel.status = value;
-            }
-          });
+        const coverEl = $('.series-cover .img-in-ratio').first();
+        const coverDataBg = coverEl.attr('data-bg')?.trim();
+        if (coverDataBg) {
+          novel.cover = coverDataBg;
+        } else {
+          const style = coverEl.attr('style') || '';
+          const matchedCover = style.match(/url\(['"]?(.*?)['"]?\)/i);
+          if (matchedCover?.[1]) {
+            novel.cover = matchedCover[1];
+          }
         }
+
+        novel.genres = $('.series-gernes .series-gerne-item')
+          .map((_, element) => $(element).text().trim())
+          .get()
+          .filter(Boolean)
+          .join(',');
+
+        const infoItems = $('.series-information .info-item');
+        novel.author = '';
+        novel.artist = '';
+        novel.status = '';
+
+        infoItems.each((_, element) => {
+          const item = $(element);
+          const label = item
+            .find('.info-name')
+            .first()
+            .text()
+            .toLowerCase()
+            .trim();
+          const value = item
+            .find('.info-value')
+            .first()
+            .text()
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          if (!value) {
+            return;
+          }
+
+          if (!novel.author && label.includes('tác giả')) {
+            novel.author = value;
+            return;
+          }
+
+          if (
+            !novel.artist &&
+            (label.includes('họa sĩ') ||
+              label.includes('hoạ sĩ') ||
+              label.includes('artist'))
+          ) {
+            novel.artist = value;
+            return;
+          }
+
+          if (!novel.status && label.includes('tình trạng')) {
+            novel.status = value;
+          }
+        });
 
         const parsedChapters: Plugin.ChapterItem[] = [];
         let num = 0;
@@ -654,16 +416,20 @@ class HakoPlugin implements Plugin.PluginBase {
             });
         });
 
-        novel.chapters = parsedChapters.length ? parsedChapters : chapters;
+        novel.chapters = parsedChapters;
         switch (novel.status?.trim()) {
           case 'Đang tiến hành':
+          case 'đang tiến hành':
             novel.status = NovelStatus.Ongoing;
             break;
           case 'Tạm ngưng':
+          case 'tạm ngưng':
             novel.status = NovelStatus.OnHiatus;
             break;
           case 'Đã hoàn thành':
           case 'Hoàn thành':
+          case 'đã hoàn thành':
+          case 'hoàn thành':
           case 'Completed':
             novel.status = NovelStatus.Completed;
             break;
@@ -677,8 +443,10 @@ class HakoPlugin implements Plugin.PluginBase {
       });
   }
   parseChapter(chapterPath: string): Promise<string> {
-    return fetchApi(this.site + chapterPath)
-      .then(res => res.text())
+    return this.fetchHtmlFromMirrors(
+      chapterPath,
+      html => loadCheerio(html)('div#chapter-content').length > 0,
+    )
       .then(html => {
         const $ = loadCheerio(html);
         const chapterContainer = $('div#chapter-content').first();
