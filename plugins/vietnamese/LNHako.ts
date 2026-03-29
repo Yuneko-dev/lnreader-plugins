@@ -173,7 +173,7 @@ class HakoPlugin implements Plugin.PagePlugin {
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
   site = 'https://ln.hako.vn';
-  version = '1.1.4';
+  version = '1.1.5';
 
   private fetchHtmlFromMirrors(
     path: string,
@@ -446,10 +446,6 @@ class HakoPlugin implements Plugin.PagePlugin {
       });
   }
   async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    if (page !== '1') {
-      return { chapters: [] };
-    }
-
     const novel = await this.parseNovel(novelPath);
     return {
       chapters: novel.chapters || [],
