@@ -167,13 +167,13 @@ const parseDmyToIso = (value: string): string | undefined => {
   return date.toISOString();
 };
 
-class HakoPlugin implements Plugin.PluginBase {
+class HakoPlugin implements Plugin.PagePlugin {
   // change id
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
   site = 'https://ln.hako.vn';
-  version = '1.1.3';
+  version = '1.1.4';
 
   private fetchHtmlFromMirrors(
     path: string,
@@ -266,8 +266,10 @@ class HakoPlugin implements Plugin.PluginBase {
     return this.parseNovels(link);
   }
 
-  parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
-    const novel: Plugin.SourceNovel = {
+  parseNovel(
+    novelPath: string,
+  ): Promise<Plugin.SourceNovel & { totalPages: number }> {
+    const novel: Plugin.SourceNovel & { totalPages: number } = {
       path: novelPath,
       name: '',
       author: '',
@@ -275,6 +277,7 @@ class HakoPlugin implements Plugin.PluginBase {
       summary: '',
       genres: '',
       status: '',
+      totalPages: 1,
     };
     return this.fetchHtmlFromMirrors(
       novelPath,
@@ -441,6 +444,16 @@ class HakoPlugin implements Plugin.PluginBase {
         novel.summary = novel.summary?.trim();
         return novel;
       });
+  }
+  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
+    if (page !== '1') {
+      return { chapters: [] };
+    }
+
+    const novel = await this.parseNovel(novelPath);
+    return {
+      chapters: novel.chapters || [],
+    };
   }
   parseChapter(chapterPath: string): Promise<string> {
     return this.fetchHtmlFromMirrors(
