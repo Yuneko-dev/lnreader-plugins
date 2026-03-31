@@ -172,7 +172,7 @@ class HakoPlugin implements Plugin.PluginBase {
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
   site = 'https://ln.hako.vn';
-  version = '1.1.9';
+  version = '1.1.10';
 
   private async fetchHtmlFromMirrors(
     path: string,
@@ -456,7 +456,11 @@ class HakoPlugin implements Plugin.PluginBase {
       }
     }
 
-    chapterContainer.find('p.none,script,style,iframe').remove();
+    chapterContainer
+      .find(
+        'p.none,script,style,iframe,[style*="display: none"],[style*="display:none"]',
+      )
+      .remove();
 
     const chapterText = (chapterContainer.html() || '')
       .replace(/<p id="\d+">/g, '<p>')
