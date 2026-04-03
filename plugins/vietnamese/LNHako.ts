@@ -28,7 +28,12 @@ const decodeBase64ToBytes = (encoded: string): number[] => {
     const c3 = c3Char === '=' ? 0 : BASE64_ALPHABET.indexOf(c3Char);
     const c4 = c4Char === '=' ? 0 : BASE64_ALPHABET.indexOf(c4Char);
 
-    if (c1 < 0 || c2 < 0 || (c3Char !== '=' && c3 < 0) || (c4Char !== '=' && c4 < 0)) {
+    if (
+      c1 < 0 ||
+      c2 < 0 ||
+      (c3Char !== '=' && c3 < 0) ||
+      (c4Char !== '=' && c4 < 0)
+    ) {
       continue;
     }
 
@@ -178,7 +183,10 @@ class HakoPlugin implements Plugin.PluginBase {
     path: string,
     validator?: (html: string) => boolean,
   ): Promise<string> {
-    const hosts = [this.site, ...HAKO_MIRRORS.filter(host => host !== this.site)];
+    const hosts = [
+      this.site,
+      ...HAKO_MIRRORS.filter(host => host !== this.site),
+    ];
     let fallbackHtml = '';
 
     for (const host of hosts) {
@@ -261,8 +269,7 @@ class HakoPlugin implements Plugin.PluginBase {
 
     novel.name = $('.series-name').first().text().trim();
     novel.summary =
-      $('.summary-content').first().text().replace(/\s+\n/g, '\n').trim() ||
-      '';
+      $('.summary-content').first().text().replace(/\s+\n/g, '\n').trim() || '';
 
     const coverEl = $('.series-cover .img-in-ratio').first();
     const coverDataBg = coverEl.attr('data-bg')?.trim();
@@ -289,12 +296,7 @@ class HakoPlugin implements Plugin.PluginBase {
 
     infoItems.each((_, element) => {
       const item = $(element);
-      const label = item
-        .find('.info-name')
-        .first()
-        .text()
-        .toLowerCase()
-        .trim();
+      const label = item.find('.info-name').first().text().toLowerCase().trim();
       const value = item
         .find('.info-value')
         .first()
@@ -416,6 +418,8 @@ class HakoPlugin implements Plugin.PluginBase {
     novel.genres = novel.genres?.replace(/,*\s*$/, '');
     novel.name = novel.name.trim();
     novel.summary = novel.summary?.trim();
+
+    console.log(novel);
     return novel;
   }
   async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
@@ -429,7 +433,7 @@ class HakoPlugin implements Plugin.PluginBase {
       chapterPath,
       html => load(html)('div#chapter-content').length > 0,
     );
-    
+
     const $ = load(html);
     const chapterContainer = $('div#chapter-content').first();
 
@@ -469,7 +473,7 @@ class HakoPlugin implements Plugin.PluginBase {
 
     return chapterText || 'Không tìm thấy nội dung';
   }
-  
+
   async searchNovels(
     searchTerm: string,
     pageNo: number,
