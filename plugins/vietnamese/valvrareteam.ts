@@ -8,7 +8,7 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
   name = 'Valvrareteam';
   icon = 'src/vi/valvrareteam/icon.png';
   site = 'https://valvrareteam.net';
-  version = '1.0.1';
+  version = '1.0.2';
 
   private allNovels: Plugin.NovelItem[] = [];
   private isLoaded = this.loadAllNovels();
@@ -120,14 +120,12 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
 
         const loginRequired = $item.find('.login-required-text').length > 0;
 
-        if (chapterTitle && chapterPath) {
-          chapters.push({
-            name: loginRequired ? '🔒 ' + chapterTitle : chapterTitle,
-            releaseTime: date,
-            path: chapterPath,
-            page: volumeName || undefined,
-          });
-        }
+        chapters.push({
+          name: loginRequired ? '🔒 ' + chapterTitle : chapterTitle,
+          releaseTime: date,
+          path: chapterPath,
+          page: volumeName || undefined,
+        });
       });
     });
 
@@ -172,6 +170,8 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
       genres: genres,
       chapters: chapters,
     };
+
+    console.log('Parsed novel:', novel);
 
     return novel;
   }
