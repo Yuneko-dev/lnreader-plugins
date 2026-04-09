@@ -8,7 +8,7 @@ class TruyenFull implements Plugin.PagePlugin {
   id = 'truyenfull';
   name = 'Truyện Full';
   icon = 'src/vi/truyenfull/icon.png';
-  site = 'https://truyenfull.io';
+  site = 'https://truyenfull.vision';
   version = '1.0.2';
 
   parseNovels(loadedCheerio: CheerioAPI) {
