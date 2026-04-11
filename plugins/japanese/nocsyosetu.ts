@@ -11,7 +11,7 @@ class NocSyosetu implements Plugin.PagePlugin {
     name = 'NocSyosetu';
     icon = 'src/jp/nocsyosetu/icon.png';
     site = 'https://noc.syosetu.com/';
-    version = '1.1.0';
+    version = '1.1.1';
     headers = {
         'Cookie': 'over18=yes',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -267,6 +267,21 @@ class NocSyosetu implements Plugin.PagePlugin {
             }
         }
 
+        const chapters = this.parseChapters($);
+
+        if (
+            chapters.length === 0 &&
+            ($('.p-novel__body').length > 0 ||
+                $('#novel_honbun').length > 0 ||
+                $('.novel_view').length > 0)
+        ) {
+            chapters.push({
+                name,
+                path: novelUrl,
+                releaseTime: '',
+            });
+        }
+
         const novel: Plugin.SourceNovel & { totalPages: number } = {
             path: novelUrl,
             name,
@@ -275,7 +290,7 @@ class NocSyosetu implements Plugin.PagePlugin {
             genres,
             cover: defaultCover,
             status: body.includes('完結済') ? NovelStatus.Completed : NovelStatus.Ongoing,
-            chapters: this.parseChapters($),
+            chapters,
             totalPages: lastPageNum,
         };
 
@@ -299,9 +314,26 @@ class NocSyosetu implements Plugin.PagePlugin {
 
         const $ = loadCheerio(body);
 
-        const content = $('.p-novel__body').html() || '';
+        let chapterContent = '';
 
-        return content;
+        const preface = $('.p-novel__preface').html() || $('#novel_p').html();
+        if (preface) {
+            chapterContent += `<div class="preface">${preface}</div><hr/>`;
+        }
+
+        const bodyContent =
+            $('.p-novel__body').html() ||
+            $('#novel_honbun').html() ||
+            $('.novel_view').html() ||
+            '';
+        chapterContent += bodyContent;
+
+        const afterword = $('.p-novel__afterword').html() || $('#novel_a').html();
+        if (afterword) {
+            chapterContent += `<hr/><div class="afterword">${afterword}</div>`;
+        }
+
+        return chapterContent;
     }
 
     async searchNovels(
