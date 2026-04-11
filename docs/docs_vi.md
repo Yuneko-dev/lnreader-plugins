@@ -20,7 +20,7 @@ npm install
 
 - Tất cả các plugin được đặt trong thư mục `plugins`.
 - Do repository này tập trung hỗ trợ các nền tảng Web Novel tiếng Việt, vui lòng tạo hoặc đặt plugin của bạn bên trong thư mục `plugins/vietnamese`.
-- Bạn có thể viết toàn bộ mã nguồn của plugin vào một tệp TypeScript duy nhất (ví dụ: `plugins/vietnamese/LNHako.ts`), hoặc tạo một thư mục riêng biệt cho từng plugin nếu mã nguồn quá dài và phức tạp.
+- Bạn cần viết toàn bộ mã nguồn của plugin vào một tệp TypeScript duy nhất (ví dụ: `plugins/vietnamese/LNHako.ts`).
 
 ### 2. Các loại Plugin hỗ trợ
 
@@ -34,9 +34,8 @@ Dự án hiện tại hỗ trợ 2 khuôn mẫu plugin chính: `PluginBase` và 
 
 Để plugin của bạn được biên dịch thành gói JavaScript bundle hoàn chỉnh, bạn cần đăng ký (import) plugin đó vào tệp `plugins/index.ts` và đưa nó vào mảng danh sách xuất (export) `PLUGINS`.
 
-**Lưu ý:** Dự án sử dụng module CommonJS nên khi viết cú pháp import, bạn không cần thêm đuôi `.js` vào đường dẫn tệp (khác với cấu trúc ESM).
+Việc đăng kí sẽ được thực hiện tự động khi bạn sử dụng lệnh `npm run dev:start`
 
-**Ví dụ cách đăng ký tại `plugins/index.ts`:**
 ```ts
 import { Plugin } from '@/types/plugin';
 
