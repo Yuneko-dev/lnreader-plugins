@@ -174,7 +174,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.1.18';
+  version = '1.1.19';
 
   pluginSettings = {
     usingDocln: {
@@ -182,6 +182,11 @@ class HakoPlugin implements Plugin.PluginBase {
       label: 'Sử dụng tên miền docln.sbs (nếu ln.hako.vn bị lỗi)',
       type: 'Switch',
     },
+    showAllChapters: {
+      value: '',
+      label: 'Hiển thị tất cả chương, không chia theo Volume. Tương thích với LNReader gốc.',
+      type: 'Switch',
+    }
   };
 
   get site() {
@@ -190,6 +195,10 @@ class HakoPlugin implements Plugin.PluginBase {
 
   get usingDocln() {
     return storage.get('usingDocln') as boolean;
+  }
+
+  get showAllChapters() {
+    return storage.get('showAllChapters') as boolean;
   }
 
   private async fetchHtmlFromMirrors(
@@ -387,6 +396,11 @@ class HakoPlugin implements Plugin.PluginBase {
             page: volume,
             chapterNumber,
           };
+
+          if (this.showAllChapters) {
+            delete chapter.page;
+            chapter.name = `[${volume}]: ${chapter.name}`;
+          }
 
           const releaseTimeRaw = $(chapterElement)
             .find('.chapter-time')

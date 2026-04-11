@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 
 import { fetchApi, fetchProto, fetchText, fetchFile } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
@@ -8,6 +8,7 @@ import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage, localStorage, sessionStorage } from '@libs/storage';
 
+// Thêm ".broken" vào tên file để tránh ext này được build
 class TemplatePlugin implements Plugin.PluginBase {
   // Là một ID duy nhất để nhận diện Plugin
   id = 'template.id';

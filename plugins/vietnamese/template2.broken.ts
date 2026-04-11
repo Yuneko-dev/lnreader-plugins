@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { fetchApi, fetchProto, fetchText, fetchFile } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { Filters } from '@libs/filterInputs';
@@ -7,6 +9,7 @@ import { NovelStatus } from '@libs/novelStatus';
 import { storage, localStorage, sessionStorage } from '@libs/storage';
 
 // Phần đầu của TemplatePlugin giống như tệp template.ts, có thể xem ở đó...
+// Thêm ".broken" vào tên file để tránh ext này được build
 class TemplatePlugin implements Plugin.PagePlugin {
   id = 'template2.id';
   name = 'Template Plugin 2';
