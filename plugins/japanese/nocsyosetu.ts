@@ -2,7 +2,7 @@ import { load as loadCheerio } from 'cheerio';
 import { fetchApi } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { defaultCover } from '@libs/defaultCover';
-import { FilterTypes, Filters, FilterToValues } from '@libs/filterInputs';
+import { FilterTypes, Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
 
@@ -11,7 +11,7 @@ class NocSyosetu implements Plugin.PagePlugin {
     name = 'NocSyosetu';
     icon = 'src/jp/nocsyosetu/icon.png';
     site = 'https://noc.syosetu.com/';
-    version = '1.0.2';
+    version = '1.0.3';
     headers = {
         'Cookie': 'over18=yes',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -26,105 +26,101 @@ class NocSyosetu implements Plugin.PagePlugin {
         },
         nocsyosetu_translateLang: {
             value: 'en',
-            label: 'Translate Language (e.g., en <default> , vi, th, ...)',
+            label: 'Target Language (en <default> , vi, th, ...)',
             type: 'Text',
         },
     };
 
-    filters: Filters = {
-        site: {
-            label: 'サイト',
-            type: FilterTypes.CheckboxGroup,
-            value: ['all2'],
-            options: [
-                { label: 'ノクターンノベルズ', value: 'all2' },
-                { label: 'ムーンライトノベルズ', value: 'all3' },
-                { label: 'ミッドナイトノベルズ', value: 'all4' },
-            ],
-        },
-        type: {
-            label: 'タイプ',
-            type: FilterTypes.Picker,
-            value: '',
-            options: [
-                { label: 'すべて', value: '' },
-                { label: '短編', value: 't' },
-                { label: '連載', value: 'r' },
-                { label: '完結済連載', value: 'er' },
-            ],
-        },
-        novelend: {
-            label: '完結状態',
-            type: FilterTypes.Picker,
-            value: '0',
-            options: [
-                { label: 'すべて', value: '0' },
-                { label: '完結済のみ', value: '1' },
-                { label: '連載中のみ', value: '2' },
-            ],
-        },
-        order: {
-            label: '並び替え',
-            type: FilterTypes.Picker,
-            value: 'new',
-            options: [
-                { label: '最新掲載順', value: 'new' },
-                { label: '更新順', value: 'lastup' },
-                { label: '古い順', value: 'old' },
-                { label: '総合ポイント', value: 'hyoka' },
-                { label: '日間ポイント', value: 'hyoka_d' },
-                { label: '週間ポイント', value: 'hyoka_w' },
-                { label: '月間ポイント', value: 'hyoka_m' },
-                { label: '四半期ポイント', value: 'hyoka_q' },
-                { label: '年間ポイント', value: 'hyoka_y' },
-                { label: 'ブックマーク数', value: 'fav' },
-                { label: '感想数', value: 'impression' },
-                { label: '評価者数', value: 'review' },
-                { label: '文字数', value: 'length' },
-                { label: '読了時間', value: 'readingtime' },
-            ],
-        },
-        exclude: {
-            label: '除外',
-            type: FilterTypes.CheckboxGroup,
-            value: [],
-            options: [
-                { label: '残酷な描写', value: 'notzankoku' },
-                { label: 'ボーイズラブ', value: 'notbl' },
-                { label: 'ガールズラブ', value: 'notgl' },
-                { label: '異世界転生', value: 'nottensei' },
-                { label: '異世界転移', value: 'nottenyi' },
-            ],
-        },
-    };
+    get filters(): Filters {
+        const translate = storage.get('nocsyosetu_translate');
+        const getLabel = (jp: string, en: string) => translate ? `${jp} (${en})` : jp;
 
-    private filtersTranslated = false;
-    async translateFilters() {
-        if (this.filtersTranslated || !storage.get('nocsyosetu_translate')) return;
-        this.filtersTranslated = true;
-
-        const translate = async (text: string) => {
-            const cleanText = text.split(' (')[0];
-            const translated = await this.translateService(cleanText);
-            return translated ? `${cleanText} (${translated})` : text;
-        };
-
-        for (const key in this.filters) {
-            const filter = (this.filters as any)[key];
-            if (filter.label) filter.label = await translate(filter.label);
-            if (filter.options) {
-                for (const opt of filter.options) {
-                    if (opt.label) opt.label = await translate(opt.label);
-                }
-            }
-        }
+        return {
+            order: {
+                label: getLabel('並び替え', 'Order By'),
+                type: FilterTypes.Picker,
+                value: 'new',
+                options: [
+                    { label: getLabel('最新掲載順', 'Most Recently Updated'), value: 'new' },
+                    { label: getLabel('週間ユニークアクセスが多い順', 'Most Weekly Unique Accesses'), value: 'weekly' },
+                    { label: getLabel('ブックマーク登録の多い順', 'Most Bookmarks'), value: 'favnovelcnt' },
+                    { label: getLabel('レビューの多い順', 'Most Reviews'), value: 'reviewcnt' },
+                    { label: getLabel('総合ポイントの高い順', 'Highest Total Points'), value: 'hyoka' },
+                    { label: getLabel('日間ポイントの高い順', 'Highest Daily Points'), value: 'dailypoint' },
+                    { label: getLabel('週間ポイントの高い順', 'Highest Weekly Points'), value: 'weeklypoint' },
+                    { label: getLabel('月間ポイントの高い順', 'Highest Monthly Points'), value: 'monthlypoint' },
+                    { label: getLabel('四半期ポイントの高い順', 'Highest Quarterly Points'), value: 'quarterlypoint' },
+                    { label: getLabel('年間ポイントの高い順', 'Highest Yearly Points'), value: 'yearlypoint' },
+                    { label: getLabel('評価者数の多い順', 'Most Ratings'), value: 'hyokacnt' },
+                    { label: getLabel('文字数の多い順', 'Highest Character Count'), value: 'lengthdesc' },
+                    { label: getLabel('初回掲載順', 'Initial Publication Order'), value: 'generalfirstup' },
+                    { label: getLabel('更新が古い順', 'Least Recently Updated'), value: 'old' },
+                ],
+            },
+            type: {
+                label: getLabel('作品種別', 'Novel Type'),
+                type: FilterTypes.Picker,
+                value: '',
+                options: [
+                    { label: getLabel('全て', 'All'), value: '' },
+                    { label: getLabel('短編', 'Short Story'), value: 't' },
+                    { label: getLabel('連載', 'Serialization'), value: 're' },
+                    { label: getLabel('完結のみ', 'Completed'), value: 'er' },
+                    { label: getLabel('連載中のみ', 'Ongoing'), value: 'r' },
+                ],
+            },
+            scope: {
+                //&title=1&ex=1&keyword=1&wname=1
+                label: getLabel('検索範囲', 'Search Scope'),
+                type: FilterTypes.CheckboxGroup,
+                value: [],
+                options: [
+                    { label: getLabel('作品タイトル', 'Title'), value: 'title' },
+                    { label: getLabel('あらすじ', 'Synopsis'), value: 'ex' },
+                    { label: getLabel('キーワード', 'Keywords'), value: 'keyword' },
+                    { label: getLabel('作者名', 'Author'), value: 'wname' },
+                ],
+            },
+            tags: {
+                //& sasie=1-&ispickup=1&iszankoku=1&isbl=1&isgl=1&istensei=1&istenni=1
+                label: getLabel('特殊タグ', 'Special Tags'),
+                type: FilterTypes.CheckboxGroup,
+                value: [],
+                options: [
+                    { label: getLabel('残酷な描写あり', 'Cruel Content'), value: 'iszankoku' },
+                    { label: getLabel('ボーイズラブ', 'Boys Love'), value: 'isbl' },
+                    { label: getLabel('ガールズラブ', 'Girls Love'), value: 'isgl' },
+                    { label: getLabel('異世界転生', 'Isekai Reincarnation'), value: 'istensei' },
+                    { label: getLabel('異世界転移', 'Isekai Transfer'), value: 'istenni' },
+                    { label: getLabel('挿絵のある作品', 'With Illustrations'), value: 'sasie' },
+                    { label: getLabel('小説PickUp！対象作品', 'Pickup'), value: 'ispickup' },
+                ],
+            },
+            tag: {
+                // &stop=1&notzankoku=1&notbl=1&notgl=1&nottensei=1&nottenni=1
+                label: getLabel('除外タグ', 'Exclude Tags'),
+                type: FilterTypes.CheckboxGroup,
+                value: [],
+                options: [
+                    { label: getLabel('長期連載停止中の作品', 'Long-term Suspended Serialization'), value: 'stop' },
+                    { label: getLabel('残酷な描写あり', 'Cruel Content'), value: 'notzankoku' },
+                    { label: getLabel('ボーイズラブ', 'Boys Love'), value: 'notbl' },
+                    { label: getLabel('ガールズラブ', 'Girls Love'), value: 'notgl' },
+                    { label: getLabel('異世界転生', 'Isekai Reincarnation'), value: 'nottensei' },
+                    { label: getLabel('異世界転移', 'Isekai Transfer'), value: 'nottenni' },
+                ],
+            },
+        } satisfies Filters;
     }
 
-    async translateService(text: string): Promise<string> {
+    async translateService(
+        text: string,
+        targetLang: string = storage.get('nocsyosetu_translateLang') || 'en',
+        sourceLang: string = 'ja'
+    ): Promise<string> {
         if (!text) return text;
-        const targetLang = storage.get('nocsyosetu_translateLang') || 'vi';
         try {
-            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=${targetLang}&dt=t&q=${encodeURIComponent(
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(
                 text,
             )}`;
             const res = await fetchApi(url);
@@ -138,36 +134,37 @@ class NocSyosetu implements Plugin.PagePlugin {
         return text;
     }
 
-    async translateToJapanese(text: string): Promise<string> {
-        if (!text) return text;
-        // Check if it's already Japanese (Hiragana, Katakana, or Kanji)
-        const isJapanese = /[\u3040-\u309F]|[\u30A0-\u30FF]|[\u4E00-\u9FAF]/.test(text);
-        if (isJapanese) return text;
-
-        try {
-            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ja&dt=t&q=${encodeURIComponent(
-                text,
-            )}`;
-            const res = await fetchApi(url);
-            const json = await res.json();
-            if (json && json[0]) {
-                return json[0].map((item: any) => item[0]).join('');
-            }
-        } catch (e) {
-            // ignore error
-        }
-        return text;
+    isJapanese(text: string): boolean {
+        return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text);
     }
 
     async popularNovels(
         pageNo: number,
-        options: Plugin.PopularNovelsOptions,
+        options: Plugin.PopularNovelsOptions<Filters>,
     ): Promise<Plugin.NovelItem[]> {
-        await this.translateFilters();
-        if (options.filters && Object.keys(options.filters).length > 0) {
-            return this.searchNovels('', pageNo, options);
+        const { filters } = options;
+        let url = `${this.site}pickup/list/?p=${pageNo}`;
+
+        if (filters && (
+            filters.order.value !== 'new' ||
+            filters.type.value ||
+            (Array.isArray(filters.scope.value) && filters.scope.value.length > 0) ||
+            (Array.isArray(filters.tags.value) && filters.tags.value.length > 0) ||
+            (Array.isArray(filters.tag.value) && filters.tag.value.length > 0)
+        )) {
+            url = `${this.site}search/search/?p=${pageNo}`;
+            if (filters.order.value) url += `&order=${filters.order.value}`;
+            if (filters.type.value) url += `&type=${filters.type.value}`;
+            if (Array.isArray(filters.scope?.value)) {
+                filters.scope.value.forEach(s => url += `&${s}=1`);
+            }
+            if (Array.isArray(filters.tags?.value)) {
+                filters.tags.value.forEach(t => url += `&${t}=1`);
+            }
+            if (Array.isArray(filters.tag?.value)) {
+                filters.tag.value.forEach(t => url += `&${t}=1`);
+            }
         }
-        const url = `${this.site}pickup/list/?p=${pageNo}`;
 
         const result = await fetchApi(url, { headers: this.headers });
         const body = await result.text();
@@ -297,36 +294,28 @@ class NocSyosetu implements Plugin.PagePlugin {
     async searchNovels(
         searchTerm: string,
         pageNo: number,
-        options?: { filters?: FilterToValues<Filters> },
+        filters?: any,
     ): Promise<Plugin.NovelItem[]> {
-        await this.translateFilters();
-        const translatedSearchTerm = await this.translateToJapanese(searchTerm);
+        let finalSearchTerm = searchTerm;
+        if (searchTerm && !this.isJapanese(searchTerm)) {
+            finalSearchTerm = await this.translateService(searchTerm, 'ja', 'auto');
+        }
+
         let url = `${this.site}search/search/?word=${encodeURIComponent(
-            translatedSearchTerm,
+            finalSearchTerm,
         )}&p=${pageNo}`;
 
-        if (options?.filters) {
-            const filters = options.filters;
-            if (filters.site?.value) {
-                (filters.site.value as string[]).forEach((v) => {
-                    url += `&${v}=1`;
-                });
+        if (filters) {
+            if (filters.order?.value) url += `&order=${filters.order.value}`;
+            if (filters.type?.value) url += `&type=${filters.type.value}`;
+            if (Array.isArray(filters.scope?.value)) {
+                filters.scope.value.forEach((s: string) => url += `&${s}=1`);
             }
-            if (filters.type?.value) {
-                url += `&type=${filters.type.value}`;
+            if (Array.isArray(filters.tags?.value)) {
+                filters.tags.value.forEach((t: string) => url += `&${t}=1`);
             }
-            if (filters.novelend?.value === '1') {
-                url += `&novelend=1`;
-            } else if (filters.novelend?.value === '2') {
-                url += `&novelend_not=1`;
-            }
-            if (filters.order?.value) {
-                url += `&order=${filters.order.value}`;
-            }
-            if (filters.exclude?.value) {
-                (filters.exclude.value as string[]).forEach((v) => {
-                    url += `&${v}=1`;
-                });
+            if (Array.isArray(filters.tag?.value)) {
+                filters.tag.value.forEach((t: string) => url += `&${t}=1`);
             }
         }
 
