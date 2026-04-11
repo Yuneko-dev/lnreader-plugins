@@ -3,12 +3,12 @@ import { toast } from 'sonner';
 import { Plugin } from '@/types/plugin';
 import { createEpub, downloadBlob } from '@/lib/epub';
 
-interface UseEpubExportOptions {
+type UseEpubExportOptions = {
   plugin: Plugin.PluginBase | null;
   sourceNovel: (Plugin.SourceNovel & { totalPages?: number }) | undefined;
   chapters: Plugin.ChapterItem[];
   novelPath: string;
-}
+};
 
 export function useEpubExport({
   plugin,
@@ -69,11 +69,11 @@ export function useEpubExport({
         description: `0/${allChapters.length} chapters processed`,
       });
 
-      const chapterContents: Array<{
+      const chapterContents: {
         title: string;
         content: string;
         path: string;
-      }> = [];
+      }[] = [];
 
       for (let i = 0; i < allChapters.length; i++) {
         const chapter = allChapters[i];

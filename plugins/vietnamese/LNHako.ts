@@ -184,9 +184,10 @@ class HakoPlugin implements Plugin.PluginBase {
     },
     showAllChapters: {
       value: '',
-      label: 'Hiển thị tất cả chương, không chia theo Volume. Tương thích với LNReader gốc.',
+      label:
+        'Hiển thị tất cả chương, không chia theo Volume. Tương thích với LNReader gốc.',
       type: 'Switch',
-    }
+    },
   };
 
   get site() {
