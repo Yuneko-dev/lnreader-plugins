@@ -8,6 +8,7 @@ This is a fork of the original repository, containing only my custom plugins and
 - [Valvrareteam](https://valvrareteam.net)
 - [tieuthuyetmang](https://tieuthuyetmang.com)
 - [truyenfull](https://truyenfull.vision)
+- [WanwanSekai](https://wanwansekai.com)
 
 ### Install URL
 ```sh
