@@ -11,7 +11,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   name = 'NocSyosetu';
   icon = 'src/jp/nocsyosetu/icon.png';
   site = 'https://noc.syosetu.com/';
-  version = '1.1.1';
+  version = '1.1.2';
   headers = {
     'Cookie': 'over18=yes',
     'User-Agent':
@@ -258,7 +258,7 @@ class NocSyosetu implements Plugin.PagePlugin {
     options: Plugin.PopularNovelsOptions<Filters>,
   ): Promise<Plugin.NovelItem[]> {
     const { filters } = options;
-    let url = `${this.site}pickup/list/?p=${pageNo}`;
+    let url = `${this.site}search/search/search.php?order_former=search&p=${pageNo}&word=&order=new&ispickup=1`;
 
     if (
       filters &&
@@ -270,8 +270,12 @@ class NocSyosetu implements Plugin.PagePlugin {
         (Array.isArray(filters.tag.value) && filters.tag.value.length > 0))
     ) {
       url = `${this.site}search/search/search.php?order_former=search&p=${pageNo}&word=`;
-      if (filters.order.value) url += `&order=${filters.order.value}`;
-      if (filters.type.value) url += `&type=${filters.type.value}`;
+      if (filters.order.value) {
+        url += `&order=${filters.order.value}`;
+      }
+      if (filters.type.value) {
+        url += `&type=${filters.type.value}`;
+      }
       if (Array.isArray(filters.scope?.value)) {
         filters.scope.value.forEach(s => (url += `&${s}=1`));
       }
@@ -367,6 +371,18 @@ class NocSyosetu implements Plugin.PagePlugin {
       }
     }
 
+    const chapters = this.parseChapters($);
+    if (
+      chapters.length === 0 &&
+      ($('.p-novel__body').length > 0)
+    ) {
+      chapters.push({
+        name,
+        path: novelUrl,
+        releaseTime: '',
+      });
+    }
+
     const novel: Plugin.SourceNovel & { totalPages: number } = {
       path: novelUrl,
       name,
@@ -377,7 +393,7 @@ class NocSyosetu implements Plugin.PagePlugin {
       status: body.includes('完結済')
         ? NovelStatus.Completed
         : NovelStatus.Ongoing,
-      chapters: this.parseChapters($),
+      chapters,
       totalPages: lastPageNum,
     };
 
