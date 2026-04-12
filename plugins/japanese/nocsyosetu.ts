@@ -14,7 +14,8 @@ class NocSyosetu implements Plugin.PagePlugin {
     version = '1.1.1';
     headers = {
         'Cookie': 'over18=yes',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Referer': 'https://noc.syosetu.com/',
     };
 
@@ -33,7 +34,8 @@ class NocSyosetu implements Plugin.PagePlugin {
 
     get filters(): Filters {
         const translate = storage.get('nocsyosetu_translate');
-        const getLabel = (jp: string, en: string) => translate ? `${jp} (${en})` : jp;
+        const getLabel = (jp: string, en: string) =>
+            translate ? `${jp} (${en})` : jp;
 
         return {
             order: {
@@ -41,20 +43,68 @@ class NocSyosetu implements Plugin.PagePlugin {
                 type: FilterTypes.Picker,
                 value: 'new',
                 options: [
-                    { label: getLabel('最新掲載順', 'Most Recently Updated'), value: 'new' },
-                    { label: getLabel('週間ユニークアクセスが多い順', 'Most Weekly Unique Accesses'), value: 'weekly' },
-                    { label: getLabel('ブックマーク登録の多い順', 'Most Bookmarks'), value: 'favnovelcnt' },
-                    { label: getLabel('レビューの多い順', 'Most Reviews'), value: 'reviewcnt' },
-                    { label: getLabel('総合ポイントの高い順', 'Highest Total Points'), value: 'hyoka' },
-                    { label: getLabel('日間ポイントの高い順', 'Highest Daily Points'), value: 'dailypoint' },
-                    { label: getLabel('週間ポイントの高い順', 'Highest Weekly Points'), value: 'weeklypoint' },
-                    { label: getLabel('月間ポイントの高い順', 'Highest Monthly Points'), value: 'monthlypoint' },
-                    { label: getLabel('四半期ポイントの高い順', 'Highest Quarterly Points'), value: 'quarterlypoint' },
-                    { label: getLabel('年間ポイントの高い順', 'Highest Yearly Points'), value: 'yearlypoint' },
-                    { label: getLabel('評価者数の多い順', 'Most Ratings'), value: 'hyokacnt' },
-                    { label: getLabel('文字数の多い順', 'Highest Character Count'), value: 'lengthdesc' },
-                    { label: getLabel('初回掲載順', 'Initial Publication Order'), value: 'generalfirstup' },
-                    { label: getLabel('更新が古い順', 'Least Recently Updated'), value: 'old' },
+                    {
+                        label: getLabel('最新掲載順', 'Most Recently Updated'),
+                        value: 'new',
+                    },
+                    {
+                        label: getLabel(
+                            '週間ユニークアクセスが多い順',
+                            'Most Weekly Unique Accesses',
+                        ),
+                        value: 'weekly',
+                    },
+                    {
+                        label: getLabel('ブックマーク登録の多い順', 'Most Bookmarks'),
+                        value: 'favnovelcnt',
+                    },
+                    {
+                        label: getLabel('レビューの多い順', 'Most Reviews'),
+                        value: 'reviewcnt',
+                    },
+                    {
+                        label: getLabel('総合ポイントの高い順', 'Highest Total Points'),
+                        value: 'hyoka',
+                    },
+                    {
+                        label: getLabel('日間ポイントの高い順', 'Highest Daily Points'),
+                        value: 'dailypoint',
+                    },
+                    {
+                        label: getLabel('週間ポイントの高い順', 'Highest Weekly Points'),
+                        value: 'weeklypoint',
+                    },
+                    {
+                        label: getLabel('月間ポイントの高い順', 'Highest Monthly Points'),
+                        value: 'monthlypoint',
+                    },
+                    {
+                        label: getLabel(
+                            '四半期ポイントの高い順',
+                            'Highest Quarterly Points',
+                        ),
+                        value: 'quarterlypoint',
+                    },
+                    {
+                        label: getLabel('年間ポイントの高い順', 'Highest Yearly Points'),
+                        value: 'yearlypoint',
+                    },
+                    {
+                        label: getLabel('評価者数の多い順', 'Most Ratings'),
+                        value: 'hyokacnt',
+                    },
+                    {
+                        label: getLabel('文字数の多い順', 'Highest Character Count'),
+                        value: 'lengthdesc',
+                    },
+                    {
+                        label: getLabel('初回掲載順', 'Initial Publication Order'),
+                        value: 'generalfirstup',
+                    },
+                    {
+                        label: getLabel('更新が古い順', 'Least Recently Updated'),
+                        value: 'old',
+                    },
                 ],
             },
             type: {
@@ -85,13 +135,28 @@ class NocSyosetu implements Plugin.PagePlugin {
                 type: FilterTypes.CheckboxGroup,
                 value: [],
                 options: [
-                    { label: getLabel('残酷な描写あり', 'Cruel Content'), value: 'iszankoku' },
+                    {
+                        label: getLabel('残酷な描写あり', 'Cruel Content'),
+                        value: 'iszankoku',
+                    },
                     { label: getLabel('ボーイズラブ', 'Boys Love'), value: 'isbl' },
                     { label: getLabel('ガールズラブ', 'Girls Love'), value: 'isgl' },
-                    { label: getLabel('異世界転生', 'Isekai Reincarnation'), value: 'istensei' },
-                    { label: getLabel('異世界転移', 'Isekai Transfer'), value: 'istenni' },
-                    { label: getLabel('挿絵のある作品', 'With Illustrations'), value: 'sasie' },
-                    { label: getLabel('小説PickUp！対象作品', 'Pickup'), value: 'ispickup' },
+                    {
+                        label: getLabel('異世界転生', 'Isekai Reincarnation'),
+                        value: 'istensei',
+                    },
+                    {
+                        label: getLabel('異世界転移', 'Isekai Transfer'),
+                        value: 'istenni',
+                    },
+                    {
+                        label: getLabel('挿絵のある作品', 'With Illustrations'),
+                        value: 'sasie',
+                    },
+                    {
+                        label: getLabel('小説PickUp！対象作品', 'Pickup'),
+                        value: 'ispickup',
+                    },
                 ],
             },
             tag: {
@@ -99,12 +164,27 @@ class NocSyosetu implements Plugin.PagePlugin {
                 type: FilterTypes.CheckboxGroup,
                 value: [],
                 options: [
-                    { label: getLabel('長期連載停止中の作品', 'Long-term Suspended Serialization'), value: 'stop' },
-                    { label: getLabel('残酷な描写あり', 'Cruel Content'), value: 'notzankoku' },
+                    {
+                        label: getLabel(
+                            '長期連載停止中の作品',
+                            'Long-term Suspended Serialization',
+                        ),
+                        value: 'stop',
+                    },
+                    {
+                        label: getLabel('残酷な描写あり', 'Cruel Content'),
+                        value: 'notzankoku',
+                    },
                     { label: getLabel('ボーイズラブ', 'Boys Love'), value: 'notbl' },
                     { label: getLabel('ガールズラブ', 'Girls Love'), value: 'notgl' },
-                    { label: getLabel('異世界転生', 'Isekai Reincarnation'), value: 'nottensei' },
-                    { label: getLabel('異世界転移', 'Isekai Transfer'), value: 'nottenni' },
+                    {
+                        label: getLabel('異世界転生', 'Isekai Reincarnation'),
+                        value: 'nottensei',
+                    },
+                    {
+                        label: getLabel('異世界転移', 'Isekai Transfer'),
+                        value: 'nottenni',
+                    },
                 ],
             },
         } satisfies Filters;
@@ -113,10 +193,14 @@ class NocSyosetu implements Plugin.PagePlugin {
     async translateService(
         text: string,
         targetLang?: string,
-        sourceLang: string = 'auto',
+        sourceLang = 'auto',
     ): Promise<string> {
         if (!text) return text;
-        const lang = (targetLang || storage.get('nocsyosetu_translateLang') || 'en').trim();
+        const lang = (
+            targetLang ||
+            storage.get('nocsyosetu_translateLang') ||
+            'en'
+        ).trim();
         if (lang === sourceLang) return text;
 
         try {
@@ -143,18 +227,20 @@ class NocSyosetu implements Plugin.PagePlugin {
 
         $('.searchkekka_box, .trackback_list').each((i: number, el: any) => {
             const $el = $(el);
-            const titleAnchor = $el.find('.novel_h a, .trackback_listdiv a, a.tl').first();
+            const titleAnchor = $el
+                .find('.novel_h a, .trackback_listdiv a, a.tl')
+                .first();
             if (titleAnchor.length === 0) return;
 
-            const name = titleAnchor.text().trim().replace(/\([^)]*\)$/, '').trim();
+            const name = titleAnchor
+                .text()
+                .trim()
+                .replace(/\([^)]*\)$/, '')
+                .trim();
             let novelUrl = titleAnchor.attr('href');
 
             if (name && novelUrl) {
-                if (!novelUrl.startsWith('http')) {
-                    novelUrl = novelUrl.startsWith('/')
-                        ? `https://novel18.syosetu.com${novelUrl}`
-                        : `https://novel18.syosetu.com/${novelUrl}`;
-                }
+                novelUrl = this.normalizeNovelUrl(novelUrl);
 
                 novels.push({
                     name,
@@ -174,24 +260,26 @@ class NocSyosetu implements Plugin.PagePlugin {
         const { filters } = options;
         let url = `${this.site}pickup/list/?p=${pageNo}`;
 
-        if (filters && (
-            filters.order.value !== 'new' ||
-            filters.type.value ||
-            (Array.isArray(filters.scope.value) && filters.scope.value.length > 0) ||
-            (Array.isArray(filters.tags.value) && filters.tags.value.length > 0) ||
-            (Array.isArray(filters.tag.value) && filters.tag.value.length > 0)
-        )) {
+        if (
+            filters &&
+            (filters.order.value !== 'new' ||
+                filters.type.value ||
+                (Array.isArray(filters.scope.value) &&
+                    filters.scope.value.length > 0) ||
+                (Array.isArray(filters.tags.value) && filters.tags.value.length > 0) ||
+                (Array.isArray(filters.tag.value) && filters.tag.value.length > 0))
+        ) {
             url = `${this.site}search/search/search.php?order_former=search&p=${pageNo}&word=`;
             if (filters.order.value) url += `&order=${filters.order.value}`;
             if (filters.type.value) url += `&type=${filters.type.value}`;
             if (Array.isArray(filters.scope?.value)) {
-                filters.scope.value.forEach(s => url += `&${s}=1`);
+                filters.scope.value.forEach(s => (url += `&${s}=1`));
             }
             if (Array.isArray(filters.tags?.value)) {
-                filters.tags.value.forEach(t => url += `&${t}=1`);
+                filters.tags.value.forEach(t => (url += `&${t}=1`));
             }
             if (Array.isArray(filters.tag?.value)) {
-                filters.tag.value.forEach(t => url += `&${t}=1`);
+                filters.tag.value.forEach(t => (url += `&${t}=1`));
             }
         }
 
@@ -202,15 +290,17 @@ class NocSyosetu implements Plugin.PagePlugin {
         const novels = this.parseNovels($);
 
         if (novels.length === 0) {
-            throw new Error('Cannot load novels. Please check the age gate in WebView. / 作品をロードできません。WebViewで年齢確認を行ってください。');
+            throw new Error(
+                'Cannot load novels. Please check the age gate in WebView. / 作品をロードできません。WebViewで年齢確認を行ってください。',
+            );
         }
 
         const translate = storage.get('nocsyosetu_translate');
         if (translate && novels.length > 0) {
             await Promise.all(
-                novels.map(async (n) => {
+                novels.map(async n => {
                     n.name = await this.translateService(n.name);
-                })
+                }),
             );
         }
 
@@ -227,11 +317,7 @@ class NocSyosetu implements Plugin.PagePlugin {
             if (name && path) {
                 chapters.push({
                     name,
-                    path: path.startsWith('http')
-                        ? path
-                        : path.startsWith('/')
-                            ? `https://novel18.syosetu.com${path}`
-                            : `https://novel18.syosetu.com/${path}`,
+                    path: this.normalizeNovelUrl(path),
                     releaseTime: '',
                 });
             }
@@ -239,7 +325,19 @@ class NocSyosetu implements Plugin.PagePlugin {
         return chapters;
     }
 
-    async parseNovel(novelUrl: string): Promise<Plugin.SourceNovel & { totalPages: number }> {
+    private normalizeNovelUrl(url: string): string {
+        if (url.startsWith('http')) {
+            return url;
+        } else if (url.startsWith('/')) {
+            return `https://novel18.syosetu.com${url}`;
+        } else {
+            return `https://novel18.syosetu.com/${url}`;
+        }
+    }
+
+    async parseNovel(
+        novelUrl: string,
+    ): Promise<Plugin.SourceNovel & { totalPages: number }> {
         const result = await fetchApi(novelUrl, { headers: this.headers });
         const body = await result.text();
 
@@ -254,7 +352,9 @@ class NocSyosetu implements Plugin.PagePlugin {
             }
         }
 
-        let name = $('.p-novel__title').text().trim() || $('title').text().replace('ノクターンノベルズ', '').trim();
+        let name =
+            $('.p-novel__title').text().trim() ||
+            $('title').text().replace('ノクターンノベルズ', '').trim();
         let summary = $('#novel_ex, .p-novel__summary').text().trim();
         let genres = $('meta[name="keywords"]').attr('content') || '';
 
@@ -289,7 +389,9 @@ class NocSyosetu implements Plugin.PagePlugin {
             summary,
             genres,
             cover: defaultCover,
-            status: body.includes('完結済') ? NovelStatus.Completed : NovelStatus.Ongoing,
+            status: body.includes('完結済')
+                ? NovelStatus.Completed
+                : NovelStatus.Ongoing,
             chapters,
             totalPages: lastPageNum,
         };
@@ -354,13 +456,13 @@ class NocSyosetu implements Plugin.PagePlugin {
             if (filters.order?.value) url += `&order=${filters.order.value}`;
             if (filters.type?.value) url += `&type=${filters.type.value}`;
             if (Array.isArray(filters.scope?.value)) {
-                filters.scope.value.forEach((s: string) => url += `&${s}=1`);
+                filters.scope.value.forEach((s: string) => (url += `&${s}=1`));
             }
             if (Array.isArray(filters.tags?.value)) {
-                filters.tags.value.forEach((t: string) => url += `&${t}=1`);
+                filters.tags.value.forEach((t: string) => (url += `&${t}=1`));
             }
             if (Array.isArray(filters.tag?.value)) {
-                filters.tag.value.forEach((t: string) => url += `&${t}=1`);
+                filters.tag.value.forEach((t: string) => (url += `&${t}=1`));
             }
         }
 
@@ -371,17 +473,22 @@ class NocSyosetu implements Plugin.PagePlugin {
         const novels = this.parseNovels($);
 
         if (novels.length === 0) {
-            if (!body.includes('searchkekka_box') && !body.includes('trackback_list')) {
-                throw new Error('Cannot load results. Please check the age gate in WebView. / 結果をロードできません。WebViewで年齢確認を行ってください。');
+            if (
+                !body.includes('searchkekka_box') &&
+                !body.includes('trackback_list')
+            ) {
+                throw new Error(
+                    'Cannot load results. Please check the age gate in WebView. / 結果をロードできません。WebViewで年齢確認を行ってください。',
+                );
             }
         }
 
         const translate = storage.get('nocsyosetu_translate');
         if (translate && novels.length > 0) {
             await Promise.all(
-                novels.map(async (n) => {
+                novels.map(async n => {
                     n.name = await this.translateService(n.name);
-                })
+                }),
             );
         }
 
