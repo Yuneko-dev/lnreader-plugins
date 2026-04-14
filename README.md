@@ -2,13 +2,14 @@ This is a fork of the original repository, containing only my custom plugins and
 
 ### Included sources:
 
-- [NocSyosetu](https://noc.syosetu.com/)
+- [NocSyosetu](https://noc.syosetu.com)
 - [Hako](https://ln.hako.vn)
 - [Akaytruyen](https://akaytruyen.com)
 - [Valvrareteam](https://valvrareteam.net)
 - [tieuthuyetmang](https://tieuthuyetmang.com)
 - [truyenfull](https://truyenfull.vision)
 - [WanwanSekai](https://wanwansekai.com)
+- [DocTruyenLN](https://quykiep.com)
 
 ### Install URL
 ```sh
