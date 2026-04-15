@@ -9,7 +9,7 @@ class DocTruyenLNPlugin implements Plugin.PagePlugin {
     name = 'DocTruyenLN';
     icon = 'src/vi/doctruyenln/icon.png';
     site = 'https://quykiep.com';
-    version = '1.0.4';
+    version = '1.0.5';
 
     imageRequestInit = {
         headers: {
@@ -87,7 +87,7 @@ class DocTruyenLNPlugin implements Plugin.PagePlugin {
 
         const canonical = body.match(/<link\s+rel="canonical"\s+href="([^"]+)"\s*\/?>/i)?.[1];
         if (canonical === `${this.site}/`) {
-            throw new Error('Truyện không thể truy cập truyện này do Website đã chặn!');
+            throw new Error('Không thể truy cập truyện này do Website đã chặn!');
         }
 
         const loadedCheerio = parseHTML(body);
@@ -142,6 +142,7 @@ class DocTruyenLNPlugin implements Plugin.PagePlugin {
 
     parseChapters(loadedCheerio: CheerioAPI): Plugin.ChapterItem[] {
         const chapters: Plugin.ChapterItem[] = [];
+
         loadedCheerio('a[href*="/chuong-"]').each((i, el) => {
             if (i === 0) return;
             const $el = loadedCheerio(el);
@@ -179,6 +180,9 @@ class DocTruyenLNPlugin implements Plugin.PagePlugin {
         searchTerm: string,
         pageNo: number,
     ): Promise<Plugin.NovelItem[]> {
+        if (pageNo > 1) {
+            return [];
+        }
         const searchUrl = `${this.site}/api/book-search`;
 
         const result = await fetchApi(searchUrl, {
