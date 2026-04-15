@@ -11,7 +11,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   name = 'NocSyosetu';
   icon = 'src/jp/nocsyosetu/icon.png';
   site = 'https://noc.syosetu.com/';
-  version = '1.1.3';
+  version = '1.1.4';
   headers = {
     'Cookie': 'over18=yes',
     'User-Agent':
@@ -32,8 +32,16 @@ class NocSyosetu implements Plugin.PagePlugin {
     },
   };
 
+  get settingNocSyosetuTranslate() {
+    return storage.get('nocsyosetu_translate');
+  }
+
+  get settingNocSyosetuTranslateLang() {
+    return storage.get('nocsyosetu_translateLang') || 'en';
+  }
+
   get filters(): Filters {
-    const translate = storage.get('nocsyosetu_translate');
+    const translate = this.settingNocSyosetuTranslate;
     const getLabel = (jp: string, en: string) =>
       translate ? `${jp} (${en})` : jp;
 
@@ -218,6 +226,7 @@ class NocSyosetu implements Plugin.PagePlugin {
     return text;
   }
 
+  // dirty hack
   isJapanese(text: string): boolean {
     return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(text);
   }
@@ -291,6 +300,7 @@ class NocSyosetu implements Plugin.PagePlugin {
     const body = await result.text();
 
     const $ = loadCheerio(body);
+
     const novels = this.parseNovels($);
 
     if (novels.length === 0) {
@@ -301,33 +311,57 @@ class NocSyosetu implements Plugin.PagePlugin {
       }
     }
 
-    const translate = storage.get('nocsyosetu_translate');
-    if (translate && novels.length > 0) {
-      await Promise.all(
-        novels.map(async n => {
-          n.name = await this.translateService(n.name);
-        }),
-      );
+    if (this.settingNocSyosetuTranslate && novels.length > 0) {
+      for (const novel of novels) {
+        novel.name = await this.translateService(novel.name);
+        await this.delay(300); // add delay to avoid hitting rate limits
+      }
     }
 
     return novels;
   }
 
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   parseChapters($page: any): Plugin.ChapterItem[] {
     const chapters: Plugin.ChapterItem[] = [];
-    const chapterSelectors =
-      '.novel_sublist2 .subtitle a, .p-eplist__sublist a.p-eplist__subtitle, .index_box .subtitle a';
-    $page(chapterSelectors).each((i: number, el: any) => {
-      const name = $page(el).text().trim();
-      const path = $page(el).attr('href');
-      if (name && path) {
+
+//    const chapterSelectors =
+//      '.novel_sublist2 .subtitle a, .p-eplist__sublist a.p-eplist__subtitle, .index_box .subtitle a';
+//    $page(chapterSelectors).each((i: number, el: any) => {
+//      const name = $page(el).text().trim();
+//      const path = $page(el).attr('href');
+//      if (name && path) {
+//        chapters.push({
+//          name,
+//          path: this.normalizeNovelUrl(path),
+//          releaseTime: '',
+//        });
+//      }
+//    });
+
+    $page('.p-eplist__sublist').each((i: number, element: any) => {
+      const chapterLink = $page(element).find('a');
+      const chapterUrl = chapterLink.attr('href');
+      const chapterName = chapterLink.text().trim();
+      const releaseDate = $page(element)
+        .find('.p-eplist__update')
+        .text()
+        .trim()
+        .split(' ')[0]
+        .replace(/\//g, '-');
+
+      if (chapterUrl) {
         chapters.push({
-          name,
-          path: this.normalizeNovelUrl(path),
-          releaseTime: '',
+          name: chapterName,
+          releaseTime: releaseDate,
+          path: this.normalizeNovelUrl(chapterUrl),
         });
       }
     });
+
     return chapters;
   }
 
@@ -349,6 +383,19 @@ class NocSyosetu implements Plugin.PagePlugin {
 
     const $ = loadCheerio(body);
 
+    // Parse status
+    let status = 'Unknown';
+    if (
+      $('.c-announce').text().includes('連載中') ||
+      $('.c-announce').text().includes('未完結')
+    ) {
+      status = NovelStatus.Ongoing;
+    } else if ($('.c-announce').text().includes('更新されていません')) {
+      status = NovelStatus.OnHiatus;
+    } else if ($('.c-announce').text().includes('完結')) {
+      status = NovelStatus.Completed;
+    }
+
     let lastPageNum = 1;
     const lastPageHref = $('.c-pager__item--last').attr('href');
     if (lastPageHref) {
@@ -361,11 +408,13 @@ class NocSyosetu implements Plugin.PagePlugin {
     let name =
       $('.p-novel__title').text().trim() ||
       $('title').text().replace('ノクターンノベルズ', '').trim();
-    let summary = $('#novel_ex, .p-novel__summary').text().trim();
-    let genres = $('meta[name="keywords"]').attr('content') || '';
+    let summary = ($('#novel_ex').html() || '').replace(/<br>/g, '\n').trim();
+    let genres = $('meta[property="og:description"]')
+      .attr('content')
+      ?.split(' ')
+      .join(',');
 
-    const translate = storage.get('nocsyosetu_translate');
-    if (translate) {
+    if (this.settingNocSyosetuTranslate) {
       name = await this.translateService(name);
       summary = await this.translateService(summary);
       if (genres) {
@@ -373,27 +422,16 @@ class NocSyosetu implements Plugin.PagePlugin {
       }
     }
 
-    const chapters = this.parseChapters($);
-    if (
-      chapters.length === 0 &&
-      ($('.p-novel__body').length > 0)
-    ) {
-      chapters.push({
-        name,
-        path: novelUrl,
-        releaseTime: '',
-      });
-    }
-
     const novel: Plugin.SourceNovel & { totalPages: number } = {
       path: novelUrl,
       name,
-      author: $('.p-novel__author').text().trim().replace('作者：', ''),
+      author: $('.p-novel__author').text().replace('作者：', '').trim(),
       summary,
+      artist: '',
       genres,
       cover: defaultCover,
-      status: NovelStatus.Unknown,
-      chapters,
+      status,
+      chapters: [],
       totalPages: lastPageNum,
     };
 
@@ -401,8 +439,9 @@ class NocSyosetu implements Plugin.PagePlugin {
   }
 
   async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const nextPageUrl = `${novelPath}${novelPath.endsWith('/') ? '' : '/'}?p=${page}`;
-    const result = await fetchApi(nextPageUrl, { headers: this.headers });
+    const url = new URL(novelPath);
+    url.searchParams.set('p', page);
+    const result = await fetchApi(url.toString(), { headers: this.headers });
     const body = await result.text();
     const $ = loadCheerio(body);
 
@@ -415,11 +454,18 @@ class NocSyosetu implements Plugin.PagePlugin {
     const result = await fetchApi(chapterPath, { headers: this.headers });
     const body = await result.text();
 
-    const $ = loadCheerio(body);
+    const cheerioQuery = loadCheerio(body);
+    // Get the chapter title
+    const chapterTitle = cheerioQuery('.p-novel__title').html() || '';
 
-    const content = $('.p-novel__body').html() || '';
+    // Get the chapter content
+    const chapterContent =
+      cheerioQuery(
+        '.p-novel__body .p-novel__text:not([class*="p-novel__text--"])',
+      ).html() || '';
 
-    return content;
+    // Combine title and content with proper HTML structure
+    return `<h1>${chapterTitle}</h1>${chapterContent}`;
   }
 
   async searchNovels(
@@ -433,15 +479,20 @@ class NocSyosetu implements Plugin.PagePlugin {
 
     const url = `${this.site}search/search/search.php?order_former=search&word=${encodeURIComponent(
       finalSearchTerm,
-    )}&p=${pageNo}`;
+    )}${
+      pageNo !== undefined
+        ? `&p=${pageNo <= 1 || pageNo > 100 ? '1' : pageNo}` // check if pagenum is between 1 and 100
+        : '' // if isn't don't set ?p
+    }`;
 
     const result = await fetchApi(url, { headers: this.headers });
     const body = await result.text();
 
-    const $ = loadCheerio(body);
-    const novels = this.parseNovels($);
+    const cheerioQuery = loadCheerio(body);
 
-    if (novels.length === 0 && pageNo === 1) {
+    const pageNovels = this.parseNovels(cheerioQuery);
+
+    if (pageNovels.length === 0 && pageNo === 1) {
       if (!body.includes('0作品')) {
         throw new Error(
           'Failed to load novels. Please check the age gate in WebView. / 小説の読み込みに失敗しました。WebViewでの年齢確認をご確認ください。',
@@ -449,16 +500,14 @@ class NocSyosetu implements Plugin.PagePlugin {
       }
     }
 
-    const translate = storage.get('nocsyosetu_translate');
-    if (translate && novels.length > 0) {
-      await Promise.all(
-        novels.map(async n => {
-          n.name = await this.translateService(n.name);
-        }),
-      );
+    if (this.settingNocSyosetuTranslate && pageNovels.length > 0) {
+      for (const novel of pageNovels) {
+        novel.name = await this.translateService(novel.name);
+        await this.delay(300); // add delay to avoid hitting rate limits
+      }
     }
 
-    return novels;
+    return pageNovels;
   }
 }
 

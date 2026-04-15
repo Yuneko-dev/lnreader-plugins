@@ -1,6 +1,6 @@
 import { Plugin } from '@/types/plugin';
 import p_0 from '@plugins/english/novelbin';
-import p_1 from '@plugins/japanese/nocsyosetu';
+import p_1 from '@plugins/japanese/NocSyosetu';
 import p_2 from '@plugins/japanese/pixivnovel';
 import p_3 from '@plugins/vietnamese/akaytruyen';
 import p_4 from '@plugins/vietnamese/doctruyenln';
