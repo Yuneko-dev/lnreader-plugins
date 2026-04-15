@@ -5,6 +5,109 @@ import { Connect } from 'vite';
 import httpProxy from 'http-proxy';
 import { exec } from 'child_process';
 import { brotliDecompressSync, gunzipSync, zstdDecompressSync } from 'zlib';
+import https from 'https';
+import http from 'http';
+import { lookup, LookupOptions } from 'node:dns';
+
+type DNSJSON = {
+  Question: Question[];
+  Answer: Answer[];
+};
+
+type Question = {
+  name: string;
+  type: number;
+};
+
+type Answer = {
+  name: string;
+  type: number;
+  data: string;
+  TTL: number;
+};
+
+type DnsCacheEntry = {
+  ip: string;
+  expiresAt: number;
+};
+
+const dnsCache = new Map<string, DnsCacheEntry>();
+
+const DNS_TTL = 60 * 60 * 1000;
+
+async function getIpFromDoH(domain: string): Promise<string> {
+  const now = Date.now();
+
+  if (dnsCache.has(domain)) {
+    const entry = dnsCache.get(domain)!;
+
+    if (entry.expiresAt > now) {
+      console.log(`[DNS Cache] Hit: ${domain} -> ${entry.ip}`);
+      return entry.ip;
+    } else {
+      dnsCache.delete(domain);
+    }
+  }
+
+  const response = await fetch(
+    `https://cloudflare-dns.com/dns-query?name=${domain}&type=A`,
+    {
+      headers: { Accept: 'application/dns-json' },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`DoH fetch failed: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as DNSJSON;
+
+  if (data.Answer && data.Answer[0]?.data) {
+    const ip = data.Answer[0]?.data;
+
+    dnsCache.set(domain, {
+      ip: ip,
+      expiresAt: now + DNS_TTL,
+    });
+
+    console.log(`[DNS Cache] Miss (Fetched): ${domain} -> ${ip}`);
+    return ip;
+  } else {
+    throw new Error('No DNS answer found');
+  }
+}
+
+const customLookup = (
+  hostname: string,
+  options: LookupOptions,
+  callback: (
+    err: any | null,
+    address: any,
+    family?: number,
+  ) => void,
+) => {
+  getIpFromDoH(hostname)
+    .then(ip => {
+      if (!ip || ip === hostname) {
+        return lookup(hostname, options, callback);
+      }
+      if (options && options.all) {
+        callback(null, [{ address: ip, family: 4 }]);
+      } else {
+        callback(null, ip, 4);
+      }
+    })
+    .catch(err => {
+      console.error(
+        `[DoH] Error resolving ${hostname}, falling back to default DNS:`,
+        err,
+      );
+      lookup(hostname, options, callback);
+    });
+};
+
+const httpAgent = new http.Agent({ lookup: customLookup });
+const httpsAgent = new https.Agent({ lookup: customLookup });
 
 const proxy = httpProxy.createProxyServer({});
 
@@ -26,6 +129,12 @@ const settings: ServerSetting = {
 };
 
 const proxySettingMiddleware: Connect.NextHandleFunction = (req, res) => {
+  if (req.method === 'GET') {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.write(JSON.stringify(settings));
+    return res.end();
+  }
   let str = '';
   req.on('data', chunk => {
     str += chunk;
@@ -192,6 +301,7 @@ const proxyRequest: Connect.SimpleHandleFunction = (req, res) => {
         target: _url.origin,
         selfHandleResponse: true,
         followRedirects: true,
+        agent: _url.protocol === 'https:' ? httpsAgent : httpAgent,
       },
       err => {
         console.error(err);

@@ -18,11 +18,25 @@ import { FetchMode } from '@/types/types';
 
 export default function SettingsSection() {
   const [cookies, setCookies] = useState('');
-  const debouncedCookies = useDebounce(cookies, 500);
   const [fetchMode, setFetchMode] = useState<FetchMode>(FetchMode.PROXY);
   const [useUserAgent, setUseUserAgent] = useState<CheckedState>(true);
   const [loading, setLoading] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
+  const [initialLoaded, setInitialLoaded] = useState(false);
+
+  const debouncedCookies = useDebounce(cookies, 500);
+
+  useEffect(() => {
+    fetch('settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.cookies !== undefined) setCookies(data.cookies || '');
+        if (data.fetchMode !== undefined) setFetchMode(data.fetchMode);
+        if (data.useUserAgent !== undefined) setUseUserAgent(data.useUserAgent);
+      })
+      .catch(err => console.error('Failed to load settings:', err))
+      .finally(() => setInitialLoaded(true));
+  }, []);
 
   useEffect(() => {
     if (alertVisible) {
@@ -32,6 +46,7 @@ export default function SettingsSection() {
   }, [alertVisible]);
 
   useEffect(() => {
+    if (!initialLoaded) return;
     setLoading(true);
     fetch('settings', {
       method: 'POST',
@@ -47,7 +62,7 @@ export default function SettingsSection() {
       .then(() => setAlertVisible(true))
       .catch(error => console.error('Failed to save settings:', error))
       .finally(() => setLoading(false));
-  }, [debouncedCookies, fetchMode, useUserAgent]);
+  }, [debouncedCookies, fetchMode, useUserAgent, initialLoaded]);
 
   const getFetchModeLabel = (mode: FetchMode) => {
     switch (mode) {
