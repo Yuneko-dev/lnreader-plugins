@@ -12,7 +12,7 @@ class BaoMoiPlugin implements Plugin.PluginBase {
   name = 'Báo Mới';
   icon = 'src/vi/baomoi/icon.png';
   site = 'https://baomoi.com';
-  version = '1.0.3';
+  version = '1.0.4';
   filters: Filters = {
     page: {
       label: 'Tìm theo trang',
@@ -261,7 +261,7 @@ class BaoMoiPlugin implements Plugin.PluginBase {
       novel.summary = data.description || '';
       novel.chapters = [
         {
-          name: 'Đọc trực tiếp trên LNReader',
+          name: 'Ấn vào để xem chi tiết bài viết',
           path: data.url + '#read',
           chapterNumber: 0,
           releaseTime: new Date(
