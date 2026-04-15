@@ -174,7 +174,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.1.32';
+  version = '1.1.33';
 
   pluginSettings = {
     usingDocln: {
@@ -494,6 +494,13 @@ class HakoPlugin implements Plugin.PluginBase {
       }
     }
 
+    $('a').each((_, el) => {
+      const href = $(el).attr('href');
+      if (href && !href.startsWith('#')) {
+        $(el).attr('href', '#skip-link').attr('target', null);
+      }
+    });
+
     chapterContainer
       .find(
         'p.none,script,style,iframe,[style*="display: none"],[style*="display:none"]',
@@ -504,17 +511,12 @@ class HakoPlugin implements Plugin.PluginBase {
       .replace(/<p id="\d+">/g, '<p>')
       // .replace(/\[note\d+]/gi, '')
       .replace(/&nbsp;/g, '')
+      // .replace(/\[Lên trên\]/gi, '🔼')
       .trim();
 
     if (!chapterText) {
       return "";
     }
-
-    const disableClickLink = `document.querySelectorAll('a').forEach(a => {
-  a.addEventListener('click', e => {
-    e.preventDefault();
-  });
-});`;
 
     if (this.showChapterComments) {
       // Comment
@@ -539,9 +541,9 @@ class HakoPlugin implements Plugin.PluginBase {
       // Remove loading svg
       commentSection.find('.loading').remove();
 
-      return `<div>\n${chapterText}\n</div>\n${styleHtmlComment}\n${commentSection.prop('outerHTML')}\n<script>${disableClickLink}</script>`;
+      return `<div>\n${chapterText}\n</div>\n${styleHtmlComment}\n${commentSection.prop('outerHTML')}`;
     } else {
-      return `<div>\n${chapterText}\n</div>\n<script>${disableClickLink}</script>`;
+      return `<div>\n${chapterText}\n</div>`;
     }
   }
 
