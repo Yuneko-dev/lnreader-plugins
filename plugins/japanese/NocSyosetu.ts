@@ -11,7 +11,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   name = 'NocSyosetu';
   icon = 'src/jp/nocsyosetu/icon.png';
   site = 'https://noc.syosetu.com/';
-  version = '1.1.6';
+  version = '1.1.7';
   headers = {
     'Cookie': 'over18=yes',
     'User-Agent':
@@ -415,6 +415,22 @@ class NocSyosetu implements Plugin.PagePlugin {
       ?.split(' ')
       .join(',');
 
+    const chapters = this.parseChapters($);
+    if (chapters.length === 0 && $('.p-novel__body').length > 0) {
+      // YYYY/MM/DD
+      const date = $('.p-novel__date-published')
+        .text()
+        .trim()
+        .match(/(\d{4}\/\d{2}\/\d{2})/)?.[1];
+      // Convert to YYYY-MM-DD
+      const releaseTime = date ? date.replace(/\//g, '-') : '';
+      chapters.push({
+        name,
+        path: novelUrl,
+        releaseTime,
+      });
+    }
+
     if (this.settingNocSyosetuTranslate) {
       if (genres) {
         const trans = await this.translateService(
@@ -441,7 +457,7 @@ class NocSyosetu implements Plugin.PagePlugin {
       genres,
       cover: defaultCover,
       status,
-      chapters: [],
+      chapters,
       totalPages: lastPageNum,
     };
 
