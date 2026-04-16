@@ -74,8 +74,7 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
     if (!text) return text;
     const lang = (
       targetLang ||
-      this.settingPixivTranslateLang ||
-      'en'
+      this.settingPixivTranslateLang
     ).trim();
     if (lang === sourceLang) return text;
 
