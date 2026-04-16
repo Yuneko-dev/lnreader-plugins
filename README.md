@@ -13,6 +13,7 @@ This is a fork of the original repository, containing only my custom plugins and
 - [PixivNovel](https://pixiv.net)
 - [Luvevaland](https://luvevaland.co)
 - [BaoMoi](https://baomoi.com)
+- [LNKuro](https://lnkuro.top)
 
 ### Install URL
 ```sh

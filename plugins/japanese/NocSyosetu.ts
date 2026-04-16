@@ -141,7 +141,7 @@ class NocSyosetu implements Plugin.PagePlugin {
       tags: {
         label: getLabel('特殊タグ', 'Special Tags'),
         type: FilterTypes.CheckboxGroup,
-        value: [],
+        value: ['ispickup'],
         options: [
           {
             label: getLabel('残酷な描写あり', 'Cruel Content'),
