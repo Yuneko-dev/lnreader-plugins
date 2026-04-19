@@ -174,7 +174,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.1.999';
+  version = '1.1.40';
 
   pluginSettings = {
     usingDocln: {
@@ -467,7 +467,6 @@ class HakoPlugin implements Plugin.PluginBase {
     };
   }
   async parseChapter(chapterPath: string): Promise<string> {
-    throw new Error("Test only.")
     const html = await this.fetchHtmlFromMirrors(
       chapterPath,
       html => load(html)('div#chapter-content').length > 0,
