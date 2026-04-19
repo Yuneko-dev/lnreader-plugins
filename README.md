@@ -19,7 +19,7 @@ This is a fork of the original repository, containing only my custom plugins and
 ```sh
 https://raw.githubusercontent.com/Yuneko-dev/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json
 ```
-[![Add Repository in LNReader](https://img.shields.io/badge/Add%20Repository%20in-LNReader-brightgreen?style=for-the-badge)](lnreader://repo/add?url=https%3A%2F%2Fraw.githubusercontent.com%2FYuneko-dev%2Flnreader-plugins%2Fplugins%2Fv3.0.0%2F.dist%2Fplugins.min.json)
+
 ---
 
 <details>
