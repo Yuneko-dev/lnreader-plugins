@@ -215,7 +215,9 @@ class BaoMoiPlugin implements Plugin.PluginBase {
         const nextData = JSON.parse(nextDataScript);
         const items =
           nextData.props.pageProps.resp.data.content.items ||
-          nextData.props.pageProps.resp.data.content.sections.flatMap((section: any) => section.items);
+          nextData.props.pageProps.resp.data.content.sections.flatMap(
+            (section: any) => section.items,
+          );
         console.log('Parsed __NEXT_DATA__:', items);
         items.forEach((item: any) => {
           if (item.title && item.url) {
@@ -240,7 +242,7 @@ class BaoMoiPlugin implements Plugin.PluginBase {
       throw new Error('Not implemented for the selected filter option');
     }
 
-    console.log("Current cache size:", this.cacheSet.size);
+    console.log('Current cache size:', this.cacheSet.size);
 
     return novels;
   }

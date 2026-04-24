@@ -82,11 +82,7 @@ async function getIpFromDoH(domain: string): Promise<string> {
 const customLookup = (
   hostname: string,
   options: LookupOptions,
-  callback: (
-    err: any | null,
-    address: any,
-    family?: number,
-  ) => void,
+  callback: (err: any | null, address: any, family?: number) => void,
 ) => {
   getIpFromDoH(hostname)
     .then(ip => {
@@ -108,8 +104,12 @@ const customLookup = (
     });
 };
 
-const httpAgent = new http.Agent({ lookup: USING_DOH ? customLookup : undefined });
-const httpsAgent = new https.Agent({ lookup: USING_DOH ? customLookup : undefined });
+const httpAgent = new http.Agent({
+  lookup: USING_DOH ? customLookup : undefined,
+});
+const httpsAgent = new https.Agent({
+  lookup: USING_DOH ? customLookup : undefined,
+});
 
 const proxy = httpProxy.createProxyServer({});
 

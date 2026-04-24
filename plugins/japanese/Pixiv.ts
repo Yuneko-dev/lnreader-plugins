@@ -72,10 +72,7 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
     sourceLang = 'auto',
   ): Promise<string> {
     if (!text) return text;
-    const lang = (
-      targetLang ||
-      this.settingPixivTranslateLang
-    ).trim();
+    const lang = (targetLang || this.settingPixivTranslateLang).trim();
     if (lang === sourceLang) return text;
 
     try {
@@ -127,7 +124,9 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
 
     for (const series of seriesList) {
       const coverUrl =
-        series.cover?.urls?.['480mw'] || series.cover?.urls?.['240mw'] || defaultCover;
+        series.cover?.urls?.['480mw'] ||
+        series.cover?.urls?.['240mw'] ||
+        defaultCover;
       const isOneshot = series.isOneshot === true;
       const path = isOneshot
         ? `/novel/show.php?id=${series.novelId}`
@@ -203,7 +202,9 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
     const seriesContents = contentBody?.page?.seriesContents || [];
     const chapters: Plugin.ChapterItem[] = seriesContents.map(
       (item: any, index: number) => ({
-        name: item.title ? `#${index + 1} ${item.title}` : `Chapter ${index + 1}`,
+        name: item.title
+          ? `#${index + 1} ${item.title}`
+          : `Chapter ${index + 1}`,
         path: `/ajax/novel/${item.id}`,
         chapterNumber: item.series?.contentOrder || index + 1,
         releaseTime: item.uploadTimestamp
@@ -248,7 +249,9 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
         novel.genres = arr[1] || novel.genres;
         novel.summary = arr.slice(2).join('\n') || novel.summary;
       } else {
-        const trans = await this.translateService(`${novel.name}\n${novel.summary}`);
+        const trans = await this.translateService(
+          `${novel.name}\n${novel.summary}`,
+        );
         const arr = trans.split('\n');
         novel.name = arr[0] || novel.name;
         novel.summary = arr.slice(1).join('\n') || novel.summary;
@@ -304,7 +307,9 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
         novel.genres = arr[1] || novel.genres;
         novel.summary = arr.slice(2).join('\n') || novel.summary;
       } else {
-        const trans = await this.translateService(`${novel.name}\n${novel.summary}`);
+        const trans = await this.translateService(
+          `${novel.name}\n${novel.summary}`,
+        );
         const arr = trans.split('\n');
         novel.name = arr[0] || novel.name;
         novel.summary = arr.slice(1).join('\n') || novel.summary;
@@ -332,7 +337,9 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
     const seriesContents = contentBody?.page?.seriesContents || [];
     const chapters: Plugin.ChapterItem[] = seriesContents.map(
       (item: any, index: number) => ({
-        name: item.title ? `#${lastOrder + index + 1} ${item.title}` : `Chapter ${lastOrder + index + 1}`,
+        name: item.title
+          ? `#${lastOrder + index + 1} ${item.title}`
+          : `Chapter ${lastOrder + index + 1}`,
         path: `/ajax/novel/${item.id}`,
         chapterNumber: item.series?.contentOrder || lastOrder + index + 1,
         releaseTime: item.uploadTimestamp
@@ -427,7 +434,10 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
         value: 'safe',
         options: [
           { label: getLabel('全年齢', 'All Ages'), value: 'safe' },
-          { label: getLabel('R-18 (※要ログイン)', 'R-18 (Login Required)'), value: 'r18' },
+          {
+            label: getLabel('R-18 (※要ログイン)', 'R-18 (Login Required)'),
+            value: 'r18',
+          },
         ],
       },
       genre: {
@@ -436,7 +446,10 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
         value: 'all',
         options: [
           {
-            label: getLabel('すべて (全年齢のみ)', 'All Genres (All Ages Only)'),
+            label: getLabel(
+              'すべて (全年齢のみ)',
+              'All Genres (All Ages Only)',
+            ),
             value: 'all',
           },
           { label: getLabel('恋愛', 'Romance'), value: 'romance' },
@@ -453,7 +466,10 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
           { label: getLabel('SF', 'Sci-Fi'), value: 'sci-fi' },
           { label: getLabel('純文学', 'Literature'), value: 'literature' },
           { label: getLabel('ヒューマンドラマ', 'Drama'), value: 'drama' },
-          { label: getLabel('歴史・時代', 'Historical pieces'), value: 'historical_pieces' },
+          {
+            label: getLabel('歴史・時代', 'Historical pieces'),
+            value: 'historical_pieces',
+          },
           { label: getLabel('ボーイズラブ', 'BL'), value: 'bl' },
           { label: getLabel('百合', 'Yuri'), value: 'yuri' },
           {
@@ -469,11 +485,17 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
           { label: getLabel('レビュー', 'Reviews'), value: 'reviews' },
           { label: getLabel('その他', 'Other'), value: 'other' },
           {
-            label: getLabel('男性に人気 (R18のみ)', 'Popular with male (R18 Only)'),
+            label: getLabel(
+              '男性に人気 (R18のみ)',
+              'Popular with male (R18 Only)',
+            ),
             value: 'male',
           },
           {
-            label: getLabel('女性に人気 (R18のみ)', 'Popular with female (R18 Only)'),
+            label: getLabel(
+              '女性に人気 (R18のみ)',
+              'Popular with female (R18 Only)',
+            ),
             value: 'female',
           },
         ],

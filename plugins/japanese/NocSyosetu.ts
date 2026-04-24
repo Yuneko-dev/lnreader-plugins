@@ -504,10 +504,11 @@ class NocSyosetu implements Plugin.PagePlugin {
 
     const url = `${this.site}search/search/search.php?order_former=search&word=${encodeURIComponent(
       finalSearchTerm,
-    )}${pageNo !== undefined
+    )}${
+      pageNo !== undefined
         ? `&p=${pageNo <= 1 || pageNo > 100 ? '1' : pageNo}` // check if pagenum is between 1 and 100
         : '' // if isn't don't set ?p
-      }`;
+    }`;
 
     const result = await fetchApi(url, { headers: this.headers });
     const body = await result.text();
@@ -537,7 +538,11 @@ class NocSyosetu implements Plugin.PagePlugin {
 
   checkCacheR18(body: string): void {
     body = body.toLowerCase();
-    if (['javascript', 'cookie', 'ご利用ください。', '18歳以上'].every(word => body.includes(word))) {
+    if (
+      ['javascript', 'cookie', 'ご利用ください。', '18歳以上'].every(word =>
+        body.includes(word),
+      )
+    ) {
       throw new Error(
         'Failed to load novels. Please check the age gate in WebView. / 小説の読み込みに失敗しました。WebViewでの年齢確認をご確認ください。',
       );

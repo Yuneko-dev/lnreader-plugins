@@ -68,18 +68,18 @@ export namespace Plugin {
     value: string;
     label: string;
     type?: 'Text';
-  }
+  };
 
   export type SwitchSetting = {
     value: boolean;
     label: string;
     type: 'Switch';
-  }
+  };
 
   export type SelectOption = {
     label: string;
     value: string;
-  }
+  };
 
   export type SelectSetting = {
     value: string;
@@ -91,14 +91,14 @@ export namespace Plugin {
   export type CheckboxOption = {
     label: string;
     value: string;
-  }
+  };
 
   export type CheckboxGroupSetting = {
     value: string[];
     label: string;
     type: 'CheckboxGroup';
     options: CheckboxOption[];
-  }
+  };
 
   export type PluginSetting =
     | TextSetting

@@ -103,9 +103,12 @@ class WanwanSekaiPlugin implements Plugin.PluginBase {
       chapters: [],
     };
 
-    const chaptersRes = await fetchApi(this.site + novelPath + 'ajax/chapters/', {
-      method: 'POST',
-    });
+    const chaptersRes = await fetchApi(
+      this.site + novelPath + 'ajax/chapters/',
+      {
+        method: 'POST',
+      },
+    );
     const chaptersHtml = await chaptersRes.text();
     const $chapters = loadCheerio(chaptersHtml);
 
