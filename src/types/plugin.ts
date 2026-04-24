@@ -53,10 +53,60 @@ export namespace Plugin {
     site: string;
   };
   export type ImageRequestInit = {
+    [x: string]:
+      | string
+      | Record<string, string>
+      | Headers
+      | FormData
+      | undefined;
     method?: string;
     headers?: Record<string, string>;
     body?: string;
   };
+
+  export type TextSetting = {
+    value: string;
+    label: string;
+    type?: 'Text';
+  }
+
+  export type SwitchSetting = {
+    value: boolean;
+    label: string;
+    type: 'Switch';
+  }
+
+  export type SelectOption = {
+    label: string;
+    value: string;
+  }
+
+  export type SelectSetting = {
+    value: string;
+    label: string;
+    type: 'Select';
+    options: SelectOption[];
+  };
+
+  export type CheckboxOption = {
+    label: string;
+    value: string;
+  }
+
+  export type CheckboxGroupSetting = {
+    value: string[];
+    label: string;
+    type: 'CheckboxGroup';
+    options: CheckboxOption[];
+  }
+
+  export type PluginSetting =
+    | TextSetting
+    | SwitchSetting
+    | SelectSetting
+    | CheckboxGroupSetting;
+
+  export type PluginSettings = Record<string, PluginSetting>;
 
   export type PluginBase = {
     id: string;
@@ -76,6 +126,8 @@ export namespace Plugin {
     version: string;
     //flag indicates whether access to LocalStorage, SesesionStorage is required.
     webStorageUtilized?: boolean;
+    pluginSettings?: PluginSettings;
+
     popularNovels(
       pageNo: number,
       options: PopularNovelsOptions<Filters>,

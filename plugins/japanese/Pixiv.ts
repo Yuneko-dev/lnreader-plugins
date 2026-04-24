@@ -10,9 +10,9 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
   name = 'Pixiv Novel';
   icon = 'src/jp/pixivnovel/icon.png';
   site = 'https://www.pixiv.net';
-  version = '1.0.6';
+  version = '1.0.7';
 
-  pluginSettings = {
+  pluginSettings: Plugin.PluginSettings = {
     pixiv_translate: {
       value: false,
       label: 'Translate Titles & Summaries (Google Translate) - EN Default',
@@ -203,7 +203,7 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
     const seriesContents = contentBody?.page?.seriesContents || [];
     const chapters: Plugin.ChapterItem[] = seriesContents.map(
       (item: any, index: number) => ({
-        name: `#${index + 1} ${item.title}` || `Chapter ${index + 1}`,
+        name: item.title ? `#${index + 1} ${item.title}` : `Chapter ${index + 1}`,
         path: `/ajax/novel/${item.id}`,
         chapterNumber: item.series?.contentOrder || index + 1,
         releaseTime: item.uploadTimestamp
@@ -332,7 +332,7 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
     const seriesContents = contentBody?.page?.seriesContents || [];
     const chapters: Plugin.ChapterItem[] = seriesContents.map(
       (item: any, index: number) => ({
-        name: `#${lastOrder + index + 1} ${item.title}` || `Chapter ${lastOrder + index + 1}`,
+        name: item.title ? `#${lastOrder + index + 1} ${item.title}` : `Chapter ${lastOrder + index + 1}`,
         path: `/ajax/novel/${item.id}`,
         chapterNumber: item.series?.contentOrder || lastOrder + index + 1,
         releaseTime: item.uploadTimestamp

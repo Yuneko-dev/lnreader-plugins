@@ -176,20 +176,20 @@ class HakoPlugin implements Plugin.PluginBase {
   icon = 'src/vi/hakolightnovel/icon.png';
   version = '1.1.40';
 
-  pluginSettings = {
+  pluginSettings: Plugin.PluginSettings = {
     usingDocln: {
-      value: '',
+      value: false,
       label: 'Sử dụng tên miền docln.sbs (nếu ln.hako.vn bị lỗi)',
       type: 'Switch',
     },
     showAllChapters: {
-      value: '',
+      value: false,
       label:
         'Hiển thị tất cả chương, không chia theo Volume. Tương thích với LNReader gốc.',
       type: 'Switch',
     },
     showChapterComments: {
-      value: '',
+      value: false,
       label: 'Hiển thị bình luận ở cuối mỗi chương (thử nghiệm)',
       type: 'Switch',
     },
@@ -292,7 +292,7 @@ class HakoPlugin implements Plugin.PluginBase {
 
     const $ = load(html);
 
-    const novelType = $(".series-type").first().text().trim();
+    const novelType = $('.series-type').first().text().trim();
 
     novel.name = $('.series-name').first().text().trim();
     novel.summary = $('.summary-content p')
@@ -501,7 +501,7 @@ class HakoPlugin implements Plugin.PluginBase {
     $('a').each((_, el) => {
       // console.log('Processing link:', $(el).attr('href'), $(el).html());
       const href = $(el).attr('href');
-      if (href && href.startsWith("/")) {
+      if (href && href.startsWith('/')) {
         if ($(el).attr('target')) {
           $(el).remove();
         } else {
