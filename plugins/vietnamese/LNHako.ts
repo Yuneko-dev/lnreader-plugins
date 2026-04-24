@@ -192,7 +192,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.1.41';
+  version = '1.1.42';
 
   pluginSettings: Plugin.PluginSettings = {
     usingDocln: {
@@ -392,7 +392,7 @@ class HakoPlugin implements Plugin.PluginBase {
         .text()
         .replace(/\*/g, '') // ?
         .replace(/\s+/g, ' ')
-        .trim();
+        .trim() + "\u200b"; // hacky
 
       $(volumeElement)
         .find('.list-chapters > li')
