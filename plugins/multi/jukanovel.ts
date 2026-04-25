@@ -311,7 +311,6 @@ class JukaNovelPlugin implements Plugin.PluginBase {
         { label: 'Toàn bộ', value: 'Toàn bộ' },
         { label: 'Hàn Quốc', value: 'Hàn Quốc' },
         { label: 'Nhật Bản', value: 'Nhật Bản' },
-        { label: 'Trung Quốc', value: 'Trung Quốc' },
       ],
     },
     status: {
