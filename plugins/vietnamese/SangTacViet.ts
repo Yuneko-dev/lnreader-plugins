@@ -128,6 +128,18 @@ function normalizeChapterHtml(host: string, raw: string): string {
   return text;
 }
 
+function wrapWithParagraphs(rawText: string): string {
+  if (!rawText) return '';
+  const cleanText = rawText.replace(/<br\s*\/?>/gi, '\n');
+  const paragraphs = cleanText.split('\n');
+  const htmlResult = paragraphs
+    .map(line => line.trim())
+    .filter(line => line.length > 0) 
+    .map(line => `<p>${line}</p>`)
+    .join('\n');
+  return htmlResult;
+}
+
 function decodeHTMLEntities(str: string) {
   const entities = {
     '&amp;': '&',
@@ -154,7 +166,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return this.usingAlternativeDomain ? ALTERNATIVE_DOMAIN : SITE;
   }
-  version = '1.0.5';
+  version = '1.0.6';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -162,11 +174,20 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       type: "Switch",
       label: "Sử dụng tên miền thay thế",
       value: false,
+    },
+    autoRetry: {
+      type: "Switch",
+      label: "Tự động thử lại khi tải chương thất bại (Tối đa 10 lần, cách nhau 1 giây)",
+      value: false,
     }
   }
 
   get usingAlternativeDomain(): boolean {
     return storage.get('usingAlternativeDomain') as boolean;
+  }
+
+  get autoRetry() {
+    return storage.get('autoRetry') as boolean;
   }
 
   parseNovelsFromHTML(html: string): Plugin.NovelItem[] {
@@ -443,7 +464,25 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       .join('; ');
   }
 
+  // @ts-expect-error - public method with auto-retry wrapper
   async parseChapter(chapterPath: string): Promise<string> {
+    const maxRetries = this.autoRetry ? 10 : 1;
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        return await this._parseChapter(chapterPath);
+      } catch (err) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          throw err;
+        }
+        console.warn(`Failed to load chapter (attempt ${attempt}):`, err);
+        await new Promise(res => setTimeout(res, 1000));
+      }
+    }
+  }
+
+  private async _parseChapter(chapterPath: string): Promise<string> {
     // Path: /truyen/{host}/{sty}/{bookid}/{chapterId}/
     const pathParts = chapterPath.replace(/^\/|\/$/g, '').split('/');
     const bookHost = pathParts[1] || '';
@@ -516,25 +555,25 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     const data = this.parseLooseJson(await chapRes.text());
     if (!data) {
       throw new Error(
-        'Bạn đang tải chương quá nhanh. Hãy thử lại sau vài giây.',
+        'Bạn đang tải chương quá nhanh. Hãy thử lại sau vài giây.\nReason: null',
       );
     }
     if (String(data.code) === '0' && data.data) {
       const host = data.bookhost || bookHost;
       const content = normalizeChapterHtml(host, data.data);
       const title = data.chaptername?.trim();
-      return (title ? `<h2>${title}</h2>` : '') + content;
+      return (title ? `<h2>${title}</h2>` : '') + wrapWithParagraphs(content);
     } else {
       console.warn('Unexpected chapter API response', data);
       switch (String(data.code)) {
         case '7': {
           throw new Error(
-            'Bạn đang tải chương quá nhanh. Hãy thử lại sau vài giây.',
+            'Bạn đang tải chương quá nhanh. Hãy thử lại sau vài giây.\nReason: code 7',
           );
         }
         case '21': {
           throw new Error(
-            'Bạn cần xác nhận captcha. Hãy thử lại sau vài giây.',
+            'Bạn cần xác nhận captcha. Hãy thử lại sau vài giây.\nReason: code 21',
           );
         }
         default: {
