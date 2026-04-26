@@ -146,7 +146,7 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
   name = 'ZumiNovel';
   icon = 'src/vi/zuminovel/icon.png';
   site = SITE;
-  version = '1.0.0';
+  version = '1.0.1';
 
   pluginSettings: Plugin.PluginSettings = {
     showRaw: {
@@ -381,7 +381,7 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
           name,
           chapterNumber: chapterIndex,
         };
-        if (volumeName) chapter.page = volumeName;
+        if (volumeName) chapter.page = volumeName + '\u200b'; // smol hacky
         if (c.createdAt) chapter.releaseTime = c.createdAt;
 
         chapters.push(chapter);
@@ -463,7 +463,7 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
-      Referer: SITE + '/',
+      Referer: this.site + '/',
     },
   };
 
