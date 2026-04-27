@@ -723,10 +723,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     }
     if (String(data.code) === '0' && data.data) {
       const host = data.bookhost || bookHost;
-      const rawData = String(data.data).replace(
-        /@Bạn đang đọc bản lưu trong hệ thống/g,
-        '',
-      );
+      const rawData = String(data.data).replace("@Bạn đang đọc bản lưu trong hệ thống", "");
       const content = normalizeChapterHtml(host, rawData);
       const title = data.chaptername?.trim();
       return (title ? `<h2>${title}</h2>` : '') + wrapWithParagraphs(content);
