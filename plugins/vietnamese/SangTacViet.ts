@@ -329,7 +329,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return this.usingAlternativeDomain ? ALTERNATIVE_DOMAIN : SITE;
   }
-  version = '1.0.7';
+  version = '1.0.8';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -723,7 +723,8 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     }
     if (String(data.code) === '0' && data.data) {
       const host = data.bookhost || bookHost;
-      const content = normalizeChapterHtml(host, data.data);
+      const rawData = String(data.data).replace("@Bạn đang đọc bản lưu trong hệ thống", "");
+      const content = normalizeChapterHtml(host, rawData);
       const title = data.chaptername?.trim();
       return (title ? `<h2>${title}</h2>` : '') + wrapWithParagraphs(content);
     } else {
