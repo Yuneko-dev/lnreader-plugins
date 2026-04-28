@@ -329,7 +329,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return this.usingAlternativeDomain ? ALTERNATIVE_DOMAIN : SITE;
   }
-  version = '1.0.8';
+  version = '1.0.9';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -337,6 +337,21 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       type: "Switch",
       label: "Sử dụng tên miền thay thế",
       value: false,
+    },
+    translateEnabled: {
+      type: "Switch",
+      label: "Dịch truyện (Mở/Tắt)",
+      value: true,
+    },
+    translateEngine: {
+      type: "Select",
+      label: "Công cụ dịch (Tiếng Việt)",
+      value: "convert",
+      options: [
+        { label: "Convert", value: "convert" },
+        { label: "Bing", value: "bing" },
+        { label: "Google", value: "google" },
+      ],
     },
     autoRetry: {
       type: "Switch",
@@ -349,8 +364,42 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     return storage.get('usingAlternativeDomain') as boolean;
   }
 
+  get translateEnabled(): boolean {
+    const v = storage.get('translateEnabled');
+    // Default ON when the user has never toggled the switch.
+    return v === undefined || v === null ? true : Boolean(v);
+  }
+
+  get translateEngine(): string {
+    return (storage.get('translateEngine') as string) || 'convert';
+  }
+
   get autoRetry() {
     return storage.get('autoRetry') as boolean;
+  }
+
+  // Mirror the cookies that sangtacviet's "Cài đặt dịch truyện"
+  applyTranslationCookies(cookies: Record<string, string>): void {
+    if (!this.translateEnabled) {
+      cookies.transmode = 'chinese';
+      cookies.foreignlang = 'vi';
+      return;
+    }
+    switch (this.translateEngine) {
+      case 'bing':
+        cookies.transmode = 'tfms';
+        cookies.foreignlang = 'vi';
+        break;
+      case 'google':
+        cookies.transmode = 'name';
+        cookies.foreignlang = 'gg_vi';
+        break;
+      case 'convert':
+      default:
+        cookies.transmode = 'name';
+        cookies.foreignlang = 'vi';
+        break;
+    }
   }
 
   parseNovelsFromHTML(html: string): Plugin.NovelItem[] {
@@ -621,10 +670,30 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   }
 
   buildCookieHeader(cookies: Record<string, string>): string {
-    return Object.keys(cookies)
-      .filter(k => cookies[k])
-      .map(k => `${k}=${cookies[k]}`)
-      .join('; ');
+    // LNReader's fetchApi pipes our Cookie header through
+    // `CookieManager.setFromResponse(url, value)`, which parses `value` as a
+    // Set-Cookie response header — i.e. one cookie + attributes, not many
+    // cookies separated by ";". Only the **first** name=value pair is actually
+    // stored in the native cookie jar; everything after it is silently
+    // discarded as unknown attributes. If a stale `transmode` lingers in the
+    // jar from an earlier session, OkHttp may keep sending it instead of the
+    // value we just chose. Emitting `transmode`/`foreignlang` first guarantees
+    // the user's translation preference is the one that actually wins inside
+    // the native jar.
+    const priority = ['transmode', 'foreignlang'];
+    const seen = new Set<string>();
+    const parts: string[] = [];
+    for (const k of priority) {
+      if (cookies[k]) {
+        parts.push(`${k}=${cookies[k]}`);
+        seen.add(k);
+      }
+    }
+    for (const k of Object.keys(cookies)) {
+      if (seen.has(k) || !cookies[k]) continue;
+      parts.push(`${k}=${cookies[k]}`);
+    }
+    return parts.join('; ');
   }
 
   // @ts-expect-error - public method with auto-retry wrapper
@@ -664,6 +733,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     } catch {
       // continue — server may still recognise the WebView's cookie jar
     }
+
+    // Override translation-related cookies with the user's plugin settings
+    this.applyTranslationCookies(cookies);
 
     const apiUrl = new URL(`${this.site}/index.php`);
     apiUrl.searchParams.set('bookid', bookId);
