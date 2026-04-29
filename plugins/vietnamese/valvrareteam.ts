@@ -112,9 +112,9 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
 
     $('.module-container').each((_, moduleElement) => {
       const $module = $(moduleElement);
-      const volumeName = this.normalizeInline(
-        $module.find('.module-title').first().text(),
-      ) + '\u200b';
+      const volumeName =
+        this.normalizeInline($module.find('.module-title').first().text()) +
+        '\u200b';
 
       const templateId = $module
         .find('.module-content-wrapper > template[id^="B:"]')

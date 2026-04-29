@@ -72,7 +72,10 @@ const decodeProtectedContent = (
     if (mode === 'xor_shuffle') {
       content += decodeXorChunk(payload, key);
     } else if (mode === 'base64_reverse') {
-      content += Buffer.from(payload.split('').reverse().join(''), 'base64').toString('utf-8');
+      content += Buffer.from(
+        payload.split('').reverse().join(''),
+        'base64',
+      ).toString('utf-8');
     } else {
       content += Buffer.from(payload, 'base64').toString('utf-8');
     }
@@ -127,8 +130,7 @@ class HakoPlugin implements Plugin.PluginBase {
     },
     showTitleInfo: {
       value: false,
-      label:
-        'Hiển thị tên Volume, Chapter và thông tin truyện ở đầu chương',
+      label: 'Hiển thị tên Volume, Chapter và thông tin truyện ở đầu chương',
       type: 'Switch',
     },
   };

@@ -30,9 +30,4 @@ function flush() {
   return Promise.resolve();
 }
 
-export {
-  set,
-  get,
-  setFromResponse,
-  flush,
-};
+export { set, get, setFromResponse, flush };
