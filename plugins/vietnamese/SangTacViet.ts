@@ -14,7 +14,11 @@ const SITE = 'https://sangtacviet.app';
 const GH_UPDATE =
   'https://raw.githubusercontent.com/sangtacviet/sangtacviet.github.io/main/update.json';
 
-const ALTERNATIVE_DOMAIN = 'https://dns1.stv-appdomain-00000001.org';
+const DOMAINS: Record<string, string> = {
+  'sangtacviet.app': 'https://sangtacviet.app',
+  'sangtacviet.pro': 'https://sangtacviet.pro',
+  'dns1.stv-appdomain-00000001.org': 'https://dns1.stv-appdomain-00000001.org',
+};
 
 // ── External-URL
 const HOST_PATTERNS: Record<string, string[]> = {
@@ -328,16 +332,36 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   name = 'Sáng Tác Việt';
   icon = 'src/vi/sangtacviet/icon.png';
   get site() {
-    return this.usingAlternativeDomain ? ALTERNATIVE_DOMAIN : SITE;
+    return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.10';
+  version = '1.0.11';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
-    usingAlternativeDomain: {
+    selectedDomain: {
+      type: 'Select',
+      label: 'Tên miền',
+      value: 'sangtacviet.app',
+      options: [
+        { label: 'sangtacviet.app', value: 'sangtacviet.app' },
+        { label: 'sangtacviet.pro', value: 'sangtacviet.pro' },
+        { label: 'dns1.stv-appdomain-00000001.org', value: 'dns1.stv-appdomain-00000001.org' },
+      ],
+    },
+    translateEnabled: {
       type: 'Switch',
-      label: 'Sử dụng tên miền thay thế',
-      value: false,
+      label: 'Dịch truyện (Mở/Tắt)',
+      value: true,
+    },
+    translateEngine: {
+      type: 'Select',
+      label: 'Công cụ dịch (Tiếng Việt)',
+      value: 'convert',
+      options: [
+        { label: 'Convert', value: 'convert' },
+        { label: 'Bing', value: 'bing' },
+        { label: 'Google', value: 'google' },
+      ],
     },
     autoRetry: {
       type: 'Switch',
@@ -347,12 +371,69 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     },
   };
 
-  get usingAlternativeDomain(): boolean {
-    return storage.get('usingAlternativeDomain') as boolean;
+  constructor() {
+    const ps = this.pluginSettings;
+    for (const key in ps) {
+      if (storage.get(key) === undefined) {
+        storage.set(key, ps[key].value);
+      }
+    }
+  }
+
+  get selectedDomain(): string {
+    return (storage.get('selectedDomain') as string) || 'sangtacviet.app';
+  }
+
+  get translateEnabled(): boolean {
+    return Boolean(storage.get('translateEnabled'));
+  }
+
+  get translateEngine(): string {
+    return (storage.get('translateEngine') as string) || 'convert';
   }
 
   get autoRetry() {
     return storage.get('autoRetry') as boolean;
+  }
+
+  async applyTranslationCookies(origin: string): Promise<void> {
+    let transmode: string;
+    let foreignlang: string;
+
+    if (!this.translateEnabled) {
+      transmode = 'chinese';
+      foreignlang = 'vi';
+    } else {
+      switch (this.translateEngine) {
+        case 'bing':
+          transmode = 'tfms';
+          foreignlang = 'vi';
+          break;
+        case 'google':
+          transmode = 'name';
+          foreignlang = 'gg_vi';
+          break;
+        case 'convert':
+        default:
+          transmode = 'name';
+          foreignlang = 'vi';
+          break;
+      }
+    }
+
+    await set(origin, { name: 'transmode', value: transmode });
+    await set(origin, { name: 'foreignlang', value: foreignlang });
+  }
+
+  private async _cookieHeader(origin: string): Promise<Record<string, string>> {
+    const jar = await get(origin);
+    const parts: string[] = [];
+    for (const k in jar) {
+      const c = jar[k];
+      const v = typeof c === 'string' ? c : c && c.value;
+      if (v) parts.push(k + '=' + v);
+    }
+    return parts.length ? { Cookie: parts.join('; ') } : {};
   }
 
   parseNovelsFromHTML(html: string): Plugin.NovelItem[] {
@@ -622,20 +703,22 @@ class SangTacVietPlugin implements Plugin.PluginBase {
 
     const origin = new URL(this.site).origin;
 
-    // Step 0: clear any existing cookies for the domain, to ensure a clean slate for the rotation logic.
+    // Step 0: clear session cookies but preserve translation preference.
     const oldCookies = await get(origin);
     for (const k in oldCookies) {
-      // Why doesn’t Android have a reliable method to clear cookies?
-      await set(origin, {
-        name: k,
-        value: '',
-      });
+      await set(origin, { name: k, value: '' });
     }
     await removeSessionCookies();
 
-    // Step 1: prime the session
+    // Set translation cookies BEFORE Step 1 so the server sees them
+    // on the very first request (session creation).
+    await this.applyTranslationCookies(origin);
+
+    // Step 1: prime the session — sends translation cookies with the GET.
     try {
-      const pageRes = await fetchApi(referer);
+      const pageRes = await fetchApi(referer, {
+        headers: { ...(await this._cookieHeader(origin)) },
+      });
       const html = await pageRes.text();
       const firstCookies = this.extractCookiesFromHtml(html);
       for (const k in firstCookies) {
@@ -651,6 +734,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       // continue — server may still recognise the WebView's cookie jar
     }
 
+    // Re-apply translation cookies in case Step 1's Set-Cookie overwrote them.
+    await this.applyTranslationCookies(origin);
+
     const apiUrl = new URL(`${this.site}/index.php`);
     apiUrl.searchParams.set('bookid', bookId);
     apiUrl.searchParams.set('h', bookHost);
@@ -660,26 +746,22 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     apiUrl.searchParams.set('sty', '1');
     apiUrl.searchParams.set('exts', '');
 
-    // Step 2: probe POST that rotates `_ac`. The browser's
-    // `stv.readinit.js` calls `xhr.send()` with an empty body — verified by
-    // hooking `XMLHttpRequest.prototype.send` in a Playwright-driven Chrome.
-    // The server's `_ac` rotation is purely driven by the
-    // `X-Requested-With: XmlHttpRequest` header on this first POST, not by
-    // the body. Sending a non-empty body here on the main domain trips the
-    // anti-bot heuristic (server replies `code:21` with the captcha
-    // challenge "Vui lòng xác nhận để tiếp tục").
+    // Step 2: probe POST that rotates `_ac`.
+    // The browser sends the current `_ac` cookie value as the POST body.
+    // Sending an empty body triggers the anti-bot heuristic (code 21).
     try {
+      const jar = await get(origin);
+      const acValue = (jar._ac && (typeof jar._ac === 'string' ? jar._ac : jar._ac.value)) || '';
       const probeRes = await fetchApi(apiUrl.toString(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-Requested-With': 'XmlHttpRequest',
           Referer: referer,
+          ...(await this._cookieHeader(origin)),
         },
-        body: '',
+        body: acValue,
       });
-      // Drain the response so the underlying fetch implementation doesn't
-      // hold the connection open, but we don't actually need the JSON.
       await probeRes.text();
       if (probeRes.headers.get('set-cookie')) {
         await setFromResponse(origin, probeRes.headers.get('set-cookie')!);
@@ -694,6 +776,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Referer: referer,
+        ...(await this._cookieHeader(origin)),
       },
       body: '',
     });
@@ -705,10 +788,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     }
     if (String(data.code) === '0' && data.data) {
       const host = data.bookhost || bookHost;
-      const rawData = String(data.data).replace(
-        '@Bạn đang đọc bản lưu trong hệ thống',
-        '',
-      );
+      const rawData = String(data.data)
+        .replace('@Bạn đang đọc bản lưu trong hệ thống', '')
+        .replace('Bạn đang xem văn bản gốc chưa dịch, có thể kéo xuống cuối trang để chọn bản dịch.', '');
       const content = normalizeChapterHtml(host, rawData);
       const title = data.chaptername?.trim();
       return (title ? `<h2>${title}</h2>` : '') + wrapWithParagraphs(content);
