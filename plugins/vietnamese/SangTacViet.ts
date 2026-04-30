@@ -14,11 +14,12 @@ const SITE = 'https://sangtacviet.app';
 const GH_UPDATE =
   'https://raw.githubusercontent.com/sangtacviet/sangtacviet.github.io/main/update.json';
 
-const DOMAINS: Record<string, string> = {
-  'sangtacviet.app': 'https://sangtacviet.app',
-  'sangtacviet.pro': 'https://sangtacviet.pro',
-  'dns1.stv-appdomain-00000001.org': 'https://dns1.stv-appdomain-00000001.org',
-};
+const DOMAIN_URLS = [
+  'https://sangtacviet.app',
+  'https://sangtacviet.pro',
+  'https://dns1.stv-appdomain-00000001.org',
+];
+const DOMAINS = Object.fromEntries(DOMAIN_URLS.map(u => [new URL(u).host, u]));
 
 // ── External-URL
 const HOST_PATTERNS: Record<string, string[]> = {
@@ -334,7 +335,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.11';
+  version = '1.0.12';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -342,11 +343,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       type: 'Select',
       label: 'Tên miền',
       value: 'sangtacviet.app',
-      options: [
-        { label: 'sangtacviet.app', value: 'sangtacviet.app' },
-        { label: 'sangtacviet.pro', value: 'sangtacviet.pro' },
-        { label: 'dns1.stv-appdomain-00000001.org', value: 'dns1.stv-appdomain-00000001.org' },
-      ],
+      options: Object.keys(DOMAINS).map(h => ({ label: h, value: h })),
     },
     translateEnabled: {
       type: 'Switch',
