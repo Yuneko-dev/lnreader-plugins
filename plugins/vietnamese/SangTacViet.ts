@@ -7,13 +7,18 @@ import { NovelStatus } from '@libs/novelStatus';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
 import { storage } from '@libs/storage';
+import { get, set, setFromResponse, removeSessionCookies } from '@libs/cookie';
 
 const SITE = 'https://sangtacviet.app';
 
 const GH_UPDATE =
   'https://raw.githubusercontent.com/sangtacviet/sangtacviet.github.io/main/update.json';
 
-const ALTERNATIVE_DOMAIN = 'https://dns1.stv-appdomain-00000001.org';
+const DOMAINS: Record<string, string> = {
+  'sangtacviet.app': 'https://sangtacviet.app',
+  'sangtacviet.pro': 'https://sangtacviet.pro',
+  'dns1.stv-appdomain-00000001.org': 'https://dns1.stv-appdomain-00000001.org',
+};
 
 // ── External-URL
 const HOST_PATTERNS: Record<string, string[]> = {
@@ -327,47 +332,60 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   name = 'Sáng Tác Việt';
   icon = 'src/vi/sangtacviet/icon.png';
   get site() {
-    return this.usingAlternativeDomain ? ALTERNATIVE_DOMAIN : SITE;
+    return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.9';
+  version = '1.0.12';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
-    usingAlternativeDomain: {
-      type: "Switch",
-      label: "Sử dụng tên miền thay thế",
-      value: false,
+    selectedDomain: {
+      type: 'Select',
+      label: 'Tên miền',
+      value: 'sangtacviet.app',
+      options: [
+        { label: 'sangtacviet.app', value: 'sangtacviet.app' },
+        { label: 'sangtacviet.pro', value: 'sangtacviet.pro' },
+        { label: 'dns1.stv-appdomain-00000001.org', value: 'dns1.stv-appdomain-00000001.org' },
+      ],
     },
     translateEnabled: {
-      type: "Switch",
-      label: "Dịch truyện (Mở/Tắt)",
+      type: 'Switch',
+      label: 'Dịch truyện (Mở/Tắt)',
       value: true,
     },
     translateEngine: {
-      type: "Select",
-      label: "Công cụ dịch (Tiếng Việt)",
-      value: "convert",
+      type: 'Select',
+      label: 'Công cụ dịch (Tiếng Việt)',
+      value: 'convert',
       options: [
-        { label: "Convert", value: "convert" },
-        { label: "Bing", value: "bing" },
-        { label: "Google", value: "google" },
+        { label: 'Convert', value: 'convert' },
+        { label: 'Bing', value: 'bing' },
+        { label: 'Google', value: 'google' },
       ],
     },
     autoRetry: {
-      type: "Switch",
-      label: "Tự động thử lại khi tải chương thất bại (Tối đa 10 lần, cách nhau 1 giây)",
+      type: 'Switch',
+      label:
+        'Tự động thử lại khi tải chương thất bại (Tối đa 10 lần, cách nhau 1 giây)',
       value: false,
+    },
+  };
+
+  constructor() {
+    const ps = this.pluginSettings;
+    for (const key in ps) {
+      if (storage.get(key) === undefined) {
+        storage.set(key, ps[key].value);
+      }
     }
   }
 
-  get usingAlternativeDomain(): boolean {
-    return storage.get('usingAlternativeDomain') as boolean;
+  get selectedDomain(): string {
+    return (storage.get('selectedDomain') as string) || 'sangtacviet.app';
   }
 
   get translateEnabled(): boolean {
-    const v = storage.get('translateEnabled');
-    // Default ON when the user has never toggled the switch.
-    return v === undefined || v === null ? true : Boolean(v);
+    return Boolean(storage.get('translateEnabled'));
   }
 
   get translateEngine(): string {
@@ -378,28 +396,44 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     return storage.get('autoRetry') as boolean;
   }
 
-  // Mirror the cookies that sangtacviet's "Cài đặt dịch truyện"
-  applyTranslationCookies(cookies: Record<string, string>): void {
+  async applyTranslationCookies(origin: string): Promise<void> {
+    let transmode: string;
+    let foreignlang: string;
+
     if (!this.translateEnabled) {
-      cookies.transmode = 'chinese';
-      cookies.foreignlang = 'vi';
-      return;
+      transmode = 'chinese';
+      foreignlang = 'vi';
+    } else {
+      switch (this.translateEngine) {
+        case 'bing':
+          transmode = 'tfms';
+          foreignlang = 'vi';
+          break;
+        case 'google':
+          transmode = 'name';
+          foreignlang = 'gg_vi';
+          break;
+        case 'convert':
+        default:
+          transmode = 'name';
+          foreignlang = 'vi';
+          break;
+      }
     }
-    switch (this.translateEngine) {
-      case 'bing':
-        cookies.transmode = 'tfms';
-        cookies.foreignlang = 'vi';
-        break;
-      case 'google':
-        cookies.transmode = 'name';
-        cookies.foreignlang = 'gg_vi';
-        break;
-      case 'convert':
-      default:
-        cookies.transmode = 'name';
-        cookies.foreignlang = 'vi';
-        break;
+
+    await set(origin, { name: 'transmode', value: transmode });
+    await set(origin, { name: 'foreignlang', value: foreignlang });
+  }
+
+  private async _cookieHeader(origin: string): Promise<Record<string, string>> {
+    const jar = await get(origin);
+    const parts: string[] = [];
+    for (const k in jar) {
+      const c = jar[k];
+      const v = typeof c === 'string' ? c : c && c.value;
+      if (v) parts.push(k + '=' + v);
     }
+    return parts.length ? { Cookie: parts.join('; ') } : {};
   }
 
   parseNovelsFromHTML(html: string): Plugin.NovelItem[] {
@@ -408,9 +442,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     $('a.booksearch').each((_, el) => {
       const href = $(el).attr('href') || '';
       const name = $(el).find('.searchbooktitle').text().trim();
-      const cover =
-        $(el).find('img').attr('src') ||
-        defaultCover;
+      const cover = $(el).find('img').attr('src') || defaultCover;
       if (href && name) {
         novels.push({ name, cover, path: href });
       }
@@ -497,7 +529,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
             : `${this.site}${book.thumb}`
           : defaultCover;
 
-        const st = String(book.status || '').trim().toLowerCase();
+        const st = String(book.status || '')
+          .trim()
+          .toLowerCase();
         if (st === '0' || st === 'hoàn thành')
           novel.status = NovelStatus.Completed;
         else if (st === '1' || st === 'còn tiếp')
@@ -591,13 +625,15 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       } else if (chapJson.code === 2) {
         throw new Error('Truyện đã bị xóa hoặc không có nội dung');
       } else {
-        throw new Error(
-          `Lỗi không xác định: ${JSON.stringify(chapJson)}`,
-        );
+        throw new Error(`Lỗi không xác định: ${JSON.stringify(chapJson)}`);
       }
     }
 
-    novel.genres = `${bookHost},${novel.genres?.split(',').map(g => g.trim()).filter(g => g).join(',')}`;
+    novel.genres = `${bookHost},${novel.genres
+      ?.split(',')
+      .map(g => g.trim())
+      .filter(g => g)
+      .join(',')}`;
 
     novel.summary = decodeHTMLEntities(novel.summary || '');
 
@@ -639,63 +675,6 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     }
   }
 
-  // Apply Set-Cookie response header into our local cookie jar.
-  // Handles cookie deletion (expires=1970 or value="deleted") by dropping the
-  // entry from the jar instead of storing the literal "deleted" string.
-  applySetCookie(cookies: Record<string, string>, setCookie: string): void {
-    if (!setCookie) return;
-    const names = ['_ac', '_acx', '_gac', 'PHPSESSID', 'arouting'];
-    for (const name of names) {
-      // Find the segment of the header that defines this cookie so we can
-      // inspect its expires/value attributes per-cookie.
-      const segRe = new RegExp(
-        '\\b' + name + '=([^;,]*)([^,]*)',
-        'i',
-      );
-      const seg = setCookie.match(segRe);
-      if (!seg) continue;
-      const value = seg[1].trim();
-      const attrs = seg[2] || '';
-      const expired =
-        value === 'deleted' ||
-        value === '' ||
-        /expires=Thu,\s*01[\s-]Jan[\s-]1970/i.test(attrs) ||
-        /max-age=0\b/i.test(attrs);
-      if (expired) {
-        delete cookies[name];
-      } else {
-        cookies[name] = value;
-      }
-    }
-  }
-
-  buildCookieHeader(cookies: Record<string, string>): string {
-    // LNReader's fetchApi pipes our Cookie header through
-    // `CookieManager.setFromResponse(url, value)`, which parses `value` as a
-    // Set-Cookie response header — i.e. one cookie + attributes, not many
-    // cookies separated by ";". Only the **first** name=value pair is actually
-    // stored in the native cookie jar; everything after it is silently
-    // discarded as unknown attributes. If a stale `transmode` lingers in the
-    // jar from an earlier session, OkHttp may keep sending it instead of the
-    // value we just chose. Emitting `transmode`/`foreignlang` first guarantees
-    // the user's translation preference is the one that actually wins inside
-    // the native jar.
-    const priority = ['transmode', 'foreignlang'];
-    const seen = new Set<string>();
-    const parts: string[] = [];
-    for (const k of priority) {
-      if (cookies[k]) {
-        parts.push(`${k}=${cookies[k]}`);
-        seen.add(k);
-      }
-    }
-    for (const k of Object.keys(cookies)) {
-      if (seen.has(k) || !cookies[k]) continue;
-      parts.push(`${k}=${cookies[k]}`);
-    }
-    return parts.join('; ');
-  }
-
   // @ts-expect-error - public method with auto-retry wrapper
   async parseChapter(chapterPath: string): Promise<string> {
     const maxRetries = this.autoRetry ? 10 : 1;
@@ -722,20 +701,41 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     const chapterId = pathParts[4] || '';
     const referer = `${this.site}${chapterPath}`;
 
-    const cookies: Record<string, string> = {};
+    const origin = new URL(this.site).origin;
 
-    // Step 1: prime the session
+    // Step 0: clear session cookies but preserve translation preference.
+    const oldCookies = await get(origin);
+    for (const k in oldCookies) {
+      await set(origin, { name: k, value: '' });
+    }
+    await removeSessionCookies();
+
+    // Set translation cookies BEFORE Step 1 so the server sees them
+    // on the very first request (session creation).
+    await this.applyTranslationCookies(origin);
+
+    // Step 1: prime the session — sends translation cookies with the GET.
     try {
-      const pageRes = await fetchApi(referer);
+      const pageRes = await fetchApi(referer, {
+        headers: { ...(await this._cookieHeader(origin)) },
+      });
       const html = await pageRes.text();
-      Object.assign(cookies, this.extractCookiesFromHtml(html));
-      this.applySetCookie(cookies, pageRes.headers.get('set-cookie') || '');
+      const firstCookies = this.extractCookiesFromHtml(html);
+      for (const k in firstCookies) {
+        await set(origin, {
+          name: k,
+          value: firstCookies[k],
+        });
+      }
+      if (pageRes.headers.get('set-cookie')) {
+        await setFromResponse(origin, pageRes.headers.get('set-cookie')!);
+      }
     } catch {
       // continue — server may still recognise the WebView's cookie jar
     }
 
-    // Override translation-related cookies with the user's plugin settings
-    this.applyTranslationCookies(cookies);
+    // Re-apply translation cookies in case Step 1's Set-Cookie overwrote them.
+    await this.applyTranslationCookies(origin);
 
     const apiUrl = new URL(`${this.site}/index.php`);
     apiUrl.searchParams.set('bookid', bookId);
@@ -746,45 +746,38 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     apiUrl.searchParams.set('sty', '1');
     apiUrl.searchParams.set('exts', '');
 
-    // Step 2: probe POST that rotates `_ac`. The browser's
-    // `stv.readinit.js` calls `xhr.send()` with an empty body — verified by
-    // hooking `XMLHttpRequest.prototype.send` in a Playwright-driven Chrome.
-    // The server's `_ac` rotation is purely driven by the
-    // `X-Requested-With: XmlHttpRequest` header on this first POST, not by
-    // the body. Sending a non-empty body here on the main domain trips the
-    // anti-bot heuristic (server replies `code:21` with the captcha
-    // challenge "Vui lòng xác nhận để tiếp tục").
+    // Step 2: probe POST that rotates `_ac`.
+    // The browser sends the current `_ac` cookie value as the POST body.
+    // Sending an empty body triggers the anti-bot heuristic (code 21).
     try {
-      const probeHeaders: Record<string, string> = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Requested-With': 'XmlHttpRequest',
-        Referer: referer,
-      };
-      const probeCookie = this.buildCookieHeader(cookies);
-      if (probeCookie) probeHeaders.Cookie = probeCookie;
+      const jar = await get(origin);
+      const acValue = (jar._ac && (typeof jar._ac === 'string' ? jar._ac : jar._ac.value)) || '';
       const probeRes = await fetchApi(apiUrl.toString(), {
         method: 'POST',
-        headers: probeHeaders,
-        body: '',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XmlHttpRequest',
+          Referer: referer,
+          ...(await this._cookieHeader(origin)),
+        },
+        body: acValue,
       });
-      // Drain the response so the underlying fetch implementation doesn't
-      // hold the connection open, but we don't actually need the JSON.
       await probeRes.text();
-      this.applySetCookie(cookies, probeRes.headers.get('set-cookie') || '');
+      if (probeRes.headers.get('set-cookie')) {
+        await setFromResponse(origin, probeRes.headers.get('set-cookie')!);
+      }
     } catch {
       // probe is best-effort; carry on
     }
 
     // Step 3: actual chapter fetch using the rotated cookies.
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Referer: referer,
-    };
-    const cookieHeader = this.buildCookieHeader(cookies);
-    if (cookieHeader) headers.Cookie = cookieHeader;
     const chapRes = await fetchApi(apiUrl.toString(), {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Referer: referer,
+        ...(await this._cookieHeader(origin)),
+      },
       body: '',
     });
     const data = this.parseLooseJson(await chapRes.text());
@@ -795,7 +788,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     }
     if (String(data.code) === '0' && data.data) {
       const host = data.bookhost || bookHost;
-      const rawData = String(data.data).replace("@Bạn đang đọc bản lưu trong hệ thống", "");
+      const rawData = String(data.data)
+        .replace('@Bạn đang đọc bản lưu trong hệ thống', '')
+        .replace('Bạn đang xem văn bản gốc chưa dịch, có thể kéo xuống cuối trang để chọn bản dịch.', '');
       const content = normalizeChapterHtml(host, rawData);
       const title = data.chaptername?.trim();
       return (title ? `<h2>${title}</h2>` : '') + wrapWithParagraphs(content);
