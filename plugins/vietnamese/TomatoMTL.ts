@@ -5,6 +5,7 @@ import { NovelStatus } from '@libs/novelStatus';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
 import { storage } from '@libs/storage';
+import { Buffer } from '@libs/utils';
 import { cbc } from '@libs/aes';
 
 const SITE = 'https://tomatomtl.com';
@@ -757,55 +758,13 @@ function normalizeCoverUrl(url: unknown): string {
 }
 
 function base64ToBytes(b64: string): Uint8Array {
-  // Tolerate URL-safe variants and missing padding so we can decode the
-  // unlock_code, IV and ciphertext that ship in the page payload.
   let s = (b64 || '').replace(/-/g, '+').replace(/_/g, '/').replace(/\s+/g, '');
   while (s.length % 4) s += '=';
-  if (typeof atob === 'function') {
-    const bin = atob(s);
-    const out = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-    return out;
-  }
-  // Buffer fallback for environments without atob (e.g. older Hermes).
-  const Buf = (globalThis as { Buffer?: { from: (s: string, e: string) => Uint8Array } }).Buffer;
-  if (Buf && typeof Buf.from === 'function') {
-    return new Uint8Array(Buf.from(s, 'base64'));
-  }
-  throw new Error('No base64 decoder available');
+  return new Uint8Array(Buffer.from(s, 'base64'));
 }
 
 function bytesToUtf8(bytes: Uint8Array): string {
-  if (typeof TextDecoder !== 'undefined') {
-    return new TextDecoder('utf-8').decode(bytes);
-  }
-  // Manual UTF-8 decoder fallback.
-  let out = '';
-  let i = 0;
-  while (i < bytes.length) {
-    const c = bytes[i++];
-    if (c < 128) {
-      out += String.fromCharCode(c);
-    } else if (c < 224) {
-      out += String.fromCharCode(((c & 31) << 6) | (bytes[i++] & 63));
-    } else if (c < 240) {
-      out += String.fromCharCode(
-        ((c & 15) << 12) | ((bytes[i++] & 63) << 6) | (bytes[i++] & 63),
-      );
-    } else {
-      let cp =
-        ((c & 7) << 18) |
-        ((bytes[i++] & 63) << 12) |
-        ((bytes[i++] & 63) << 6) |
-        (bytes[i++] & 63);
-      cp -= 0x10000;
-      out += String.fromCharCode(
-        0xd800 + (cp >> 10),
-        0xdc00 + (cp & 0x3ff),
-      );
-    }
-  }
-  return out;
+  return new TextDecoder('utf-8').decode(bytes);
 }
 
 function escapeHtml(text: string): string {
