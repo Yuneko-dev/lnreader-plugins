@@ -393,7 +393,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.13';
+  version = '1.0.14';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -715,6 +715,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     data?: string;
     chaptername?: string;
     bookhost?: string;
+    err?: string;
   } | null {
     if (!text) return null;
     try {
@@ -876,7 +877,9 @@ class SangTacVietPlugin implements Plugin.PluginBase {
         }
         case '1': {
           throw new STVChapterError(
-            'Đây là chương VIP và không có nội dung.',
+            typeof data.err === 'string'
+              ? data.err
+              : 'Chương không có nội dung.',
             1,
             data,
           );
