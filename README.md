@@ -2,20 +2,21 @@ This is a fork of the original repository, containing only my custom plugins and
 
 ### Included sources:
 
-- [NocSyosetu](https://noc.syosetu.com)[^1]
-- [Hako Novel](https://ln.hako.vn)[^1]
 - [Akaytruyen](https://akaytruyen.com)
-- [Valvrareteam](https://valvrareteam.net)
-- [tieuthuyetmang](https://tieuthuyetmang.com)
-- [truyenfull](https://truyenfull.vision)
-- [Sáng Tác Việt](https://sangtacviet.app/)[^1]
-- [WanwanSekai](https://wanwansekai.com)
-- [DocTruyenLN](https://quykiep.com)
-- [PixivNovel](https://pixiv.net)
-- [Luvevaland](https://luvevaland.co)
 - [BaoMoi](https://baomoi.com)
-- [LNKuro](https://lnkuro.top)
+- [DocTruyenLN](https://quykiep.com)
+- [Hako Novel](https://ln.hako.vn)[^1]
 - [JukaNovel](https://jukaza.site)[^1]
+- [LNKuro](https://lnkuro.top)
+- [Luvevaland](https://luvevaland.co)
+- [NocSyosetu](https://noc.syosetu.com)[^1]
+- [PixivNovel](https://pixiv.net)
+- [Sáng Tác Việt](https://sangtacviet.app/)[^1]
+- [tieuthuyetmang](https://tieuthuyetmang.com)
+- [TomatoMTL](https://tomatomtl.com)[^1]
+- [truyenfull](https://truyenfull.vision)
+- [Valvrareteam](https://valvrareteam.net)
+- [WanwanSekai](https://wanwansekai.com)
 - [ZumiNovel](https://zuminovel.com)
 
 [^1]: This plugin is incompatible with the original LNReader as it utilizes new APIs introduced in [LNReader-Extended](https://github.com/Yuneko-dev/lnreader-extended)
