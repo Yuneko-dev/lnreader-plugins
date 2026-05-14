@@ -115,12 +115,16 @@ interface BookItem {
   id: number;
   name: string;
   slug: string;
-  poster: { default: string; '300': string };
+  poster: { default: string; '300': string; '600': string };
   synopsis: string;
   vote_count: number;
   status: number;
   status_name: string;
   chapter_count: number;
+  kind: number;
+  creator?: { name: string };
+  author?: { name: string; local_name?: string };
+  genres?: Array<{ id: number; name: string }>;
 }
 
 interface ChapterItem {
@@ -147,8 +151,12 @@ class MeTruyenCVPlugin implements Plugin.PluginBase {
     pageNo: number,
     { filters }: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
-    const sort = filters?.sort || '-new_chap_at';
-    const urlPath = `books?limit=20&page=${pageNo}&sort=${sort}`;
+    const sort = filters?.sort?.value || '-updated_at';
+    const kind = filters?.kind?.value || '';
+    const genre = filters?.genre?.value || '';
+    let urlPath = `books?filter[state]=published&include=creator&limit=20&page=${pageNo}&sort=${sort}`;
+    if (kind) urlPath += `&filter[kind]=${kind}`;
+    if (genre) urlPath += `&filter[genres.id]=${genre}`;
     const json: ApiListResponse<BookItem> = await apiGet(urlPath);
 
     if (!json.success || !json.data) return [];
@@ -178,18 +186,30 @@ class MeTruyenCVPlugin implements Plugin.PluginBase {
     const chaptersData: ChapterItem[] = chapJson?.data || [];
 
     let status: string = NovelStatus.Unknown;
-    if (book?.status_name === 'Hoàn thành') {
+    if (book?.status_name === 'Hoàn thành' || book?.status === 2) {
       status = NovelStatus.Completed;
-    } else if (book?.status_name === 'Còn tiếp') {
+    } else if (book?.status_name === 'Còn tiếp' || book?.status === 1) {
       status = NovelStatus.Ongoing;
     }
+
+    let authorName = '';
+    if (book?.author) {
+      authorName = book.author.name || '';
+      if (book.author.local_name) authorName += ` (${book.author.local_name})`;
+    } else if (book?.creator?.name) {
+      authorName = book.creator.name;
+    }
+
+    const genres = book?.genres
+      ? book.genres.map((g: { name: string }) => g.name).join(', ')
+      : '';
 
     const novel: Plugin.SourceNovel = {
       path: novelPath,
       name: book?.name || 'Không có tiêu đề',
-      cover: book?.poster?.['300'] || book?.poster?.default || defaultCover,
-      author: '',
-      genres: '',
+      cover: book?.poster?.['600'] || book?.poster?.['300'] || book?.poster?.default || defaultCover,
+      author: authorName,
+      genres,
       summary: book?.synopsis || '',
       status,
       chapters: chaptersData.map(ch => ({
@@ -226,7 +246,8 @@ class MeTruyenCVPlugin implements Plugin.PluginBase {
     pageNo: number,
   ): Promise<Plugin.NovelItem[]> {
     const keyword = encodeURIComponent(searchTerm.trim());
-    const urlPath = `books?limit=20&page=${pageNo}&filter[keyword]=${keyword}`;
+    if (!keyword) return [];
+    const urlPath = `books?limit=20&page=${pageNo}&filter[keyword]=${keyword}&include=creator`;
     const json: ApiListResponse<BookItem> = await apiGet(urlPath);
 
     if (!json.success || !json.data) return [];
@@ -248,9 +269,9 @@ class MeTruyenCVPlugin implements Plugin.PluginBase {
   filters = {
     sort: {
       label: 'Sắp xếp',
-      value: '-new_chap_at',
+      value: '-updated_at',
       options: [
-        { label: 'Mới cập nhật', value: '-new_chap_at' },
+        { label: 'Mới cập nhật', value: '-updated_at' },
         { label: 'Nhiều vote', value: '-vote_count' },
         { label: 'Nhiều lượt xem', value: '-view_count' },
         { label: 'Nhiều bookmark', value: '-bookmark_count' },
@@ -260,6 +281,41 @@ class MeTruyenCVPlugin implements Plugin.PluginBase {
         { label: 'Nhiều chương', value: '-chapter_count' },
         { label: 'Nhiều chữ', value: '-word_count' },
         { label: 'Mới đăng', value: '-published_at' },
+      ],
+      type: FilterTypes.Picker,
+    },
+    kind: {
+      label: 'Loại truyện',
+      value: '',
+      options: [
+        { label: 'Tất cả', value: '' },
+        { label: 'Chuyển ngữ', value: '1' },
+        { label: 'Sáng tác', value: '2' },
+      ],
+      type: FilterTypes.Picker,
+    },
+    genre: {
+      label: 'Thể loại',
+      value: '',
+      options: [
+        { label: 'Tất cả', value: '' },
+        { label: 'Tiên Hiệp', value: '2' },
+        { label: 'Huyền Huyễn', value: '3' },
+        { label: 'Khoa Huyễn', value: '4' },
+        { label: 'Võng Du', value: '5' },
+        { label: 'Đô Thị', value: '6' },
+        { label: 'Đồng Nhân', value: '7' },
+        { label: 'Dã Sử', value: '8' },
+        { label: 'Cạnh Kỹ', value: '9' },
+        { label: 'Hiện Đại Ngôn Tình', value: '10' },
+        { label: 'Huyền Nghi', value: '11' },
+        { label: 'Kiếm Hiệp', value: '12' },
+        { label: 'Huyền Huyễn Ngôn Tình', value: '13' },
+        { label: 'Huyền Nghi Thần Quái', value: '16' },
+        { label: 'Khoa Huyễn Không Gian', value: '17' },
+        { label: 'Lãng Mạn Thanh Xuân', value: '18' },
+        { label: 'Kỳ Ảo', value: '20' },
+        { label: 'Light Novel', value: '22' },
       ],
       type: FilterTypes.Picker,
     },
