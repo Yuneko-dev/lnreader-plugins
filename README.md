@@ -10,7 +10,7 @@ This is a fork of the original repository, containing only my custom plugins and
 - [JukaNovel](https://jukaza.site)[^1]
 - [LNKuro](https://lnkuro.top)
 - [Luvevaland](https://luvevaland.co)
-- [MeTruyenCV](https://metruyencv.com)
+- [MeTruyenCV](https://metruyencv.com)[^1]
 - [NocSyosetu](https://noc.syosetu.com)[^1]
 - [PixivNovel](https://pixiv.net)[^1]
 - [Sáng Tác Việt](https://sangtacviet.app/)[^1]
