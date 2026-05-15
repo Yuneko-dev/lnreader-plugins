@@ -180,6 +180,26 @@ export default tseslint.config(
           ],
         },
       ],
+      'no-restricted-syntax': [
+        'warn',
+        {
+          'selector':
+            "ImportDeclaration[source.value='@libs/aes'] ImportSpecifier[imported.name=/^(ctr|ecb|cbc|cfb|gcmsiv|aeskw|aeskwp|cmac|aessiv)$/]",
+          'message':
+            'WARNING: Plugins using this AES function will only be compatible with LNReader eXtended (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
+        },
+        {
+          'selector':
+            "ImportDeclaration[source.value='@libs/utils'] ImportSpecifier[imported.name=/^(Buffer|encodeHtmlEntities|decodeHtmlEntities)$/]",
+          'message':
+            'WARNING: Plugins using this utility function/variable will only be compatible with LNReader eXtended (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.',
+        },
+        {
+          'selector': "ImportDeclaration[source.value='@libs/cookie']",
+          'message':
+            "WARNING: Plugins using the '@libs/cookie' library will only be compatible with LNReader eXtended (No backward compatibility with original LNReader). Please take note and add a warning to the Readme.",
+        },
+      ],
     },
     languageOptions: {
       ecmaVersion: 5,
