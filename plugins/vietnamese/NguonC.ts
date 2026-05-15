@@ -274,10 +274,7 @@ class NguonCPlugin implements Plugin.PluginBase {
 
   // ---------- buildPlayerHtml ----------
 
-  private buildPlayerHtml(opts: {
-    m3u8?: string;
-    embed?: string;
-  }): string {
+  private buildPlayerHtml(opts: { m3u8?: string; embed?: string }): string {
     const esc = (s: string) => encodeHtmlEntities(s);
 
     const attrs: string[] = ['id="nguonc-player-container"'];

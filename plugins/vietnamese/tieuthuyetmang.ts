@@ -4,7 +4,7 @@ import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
 import { Filters } from '@libs/filterInputs';
-import { set } from "@libs/cookie";
+import { set } from '@libs/cookie';
 import { encodeHtmlEntities } from '@libs/utils';
 
 type TieuThuyetMangStory = {
@@ -241,7 +241,9 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
     await this.beforeRequest();
     const response = await fetchApi(new URL(novelPath, this.site).toString());
     if (!response.ok) {
-      throw new Error(`Failed to fetch novel page: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch novel page: ${response.status} ${response.statusText}`,
+      );
     }
     const html = await response.text();
     const $ = loadCheerio(html);

@@ -182,7 +182,9 @@ class LNKuroPlugin implements Plugin.PluginBase {
     novel.chapters = chapters;
 
     if (novel.chapters.length === 0) {
-      throw new Error('Không tìm thấy chương nào hoặc truyện yêu cầu đăng nhập');
+      throw new Error(
+        'Không tìm thấy chương nào hoặc truyện yêu cầu đăng nhập',
+      );
     }
 
     console.log(novel);

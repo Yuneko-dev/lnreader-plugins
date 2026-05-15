@@ -854,7 +854,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
             data,
           );
           */
-         return "<div id='captcha-placeholder'></div><meta id='no-cache-marker'/><meta id='no-prefetch-marker'/>";
+          return "<div id='captcha-placeholder'></div><meta id='no-cache-marker'/><meta id='no-prefetch-marker'/>";
         }
         case '1': {
           throw new STVChapterError(

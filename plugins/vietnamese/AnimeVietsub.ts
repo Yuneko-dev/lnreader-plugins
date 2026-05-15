@@ -430,14 +430,17 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   ): Promise<Plugin.NovelItem[]> {
     // Build filters into URL parameters
     const category = filters.category.value || 'all';
-    const genreList = filters.genre.value.length > 0 ? filters.genre.value.join('-') : 'all';
+    const genreList =
+      filters.genre.value.length > 0 ? filters.genre.value.join('-') : 'all';
     const season = filters.season.value || 'all';
     const year = filters.year.value || 'all';
     const studio = 'all'; // Not implemented in filters
     const age = encodeURIComponent(filters.ageRating.value || 'all');
     const country = filters.country.value || 'all';
     const page = pageNo > 1 ? `trang-${pageNo}.html` : '';
-    const url = new URL(`${SITE}/danh-sach/${category}/${genreList}/${season}/${year}/${studio}/${age}/${country}/${page}`);
+    const url = new URL(
+      `${SITE}/danh-sach/${category}/${genreList}/${season}/${year}/${studio}/${age}/${country}/${page}`,
+    );
     url.searchParams.set('sort', filters.sort.value || 'latest');
     // Build URL
     // https://animevietsub.bz/danh-sach/category/genre_list/season/year/studio/age/country?sort=?
