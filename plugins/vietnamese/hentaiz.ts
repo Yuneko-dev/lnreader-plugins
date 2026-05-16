@@ -452,7 +452,7 @@ class HentaiZPlugin implements Plugin.PluginBase {
   name = 'HentaiZ';
   icon = 'src/vi/hentaiz/icon.png';
   site = SITE;
-  version = '1.0.4';
+  version = '1.0.5';
 
   customJS = 'src/vi/hentaiz/player.js';
 
@@ -586,11 +586,12 @@ class HentaiZPlugin implements Plugin.PluginBase {
     const novels: Plugin.NovelItem[] = [];
     for (const ep of data.episodes) {
       if (!ep?.slug || !ep?.title) continue;
-      const cover = ep.backdropImage?.filePath
-        ? STORAGE_URL + ep.backdropImage.filePath
-        : ep.posterImage?.filePath
-          ? STORAGE_URL + ep.posterImage.filePath
+      const cover = ep.posterImage?.filePath
+        ? STORAGE_URL + ep.posterImage.filePath
+        : ep.backdropImage?.filePath
+          ? STORAGE_URL + ep.backdropImage.filePath
           : defaultCover;
+
       novels.push({
         name: ep.title,
         path: '/watch/' + ep.slug,
