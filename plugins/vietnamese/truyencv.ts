@@ -8,7 +8,7 @@ import { storage } from '@libs/storage';
 
 const API_BASE = 'https://truyencv.io/wp-json';
 
-interface WPManga {
+type WPManga = {
   id: number;
   title: { rendered: string };
   slug: string;
@@ -20,14 +20,12 @@ interface WPManga {
   team: number[];
   manga_status: string;
   _embedded?: {
-    'wp:featuredmedia'?: Array<{ source_url: string }>;
-    'wp:term'?: Array<
-      Array<{ id: number; name: string; slug: string; taxonomy: string }>
-    >;
+    'wp:featuredmedia'?: { source_url: string }[];
+    'wp:term'?: { id: number; name: string; slug: string; taxonomy: string }[][];
   };
-}
+};
 
-interface ChapterAPIItem {
+type ChapterAPIItem = {
   id: number;
   ghost_chapter_id: number;
   manga_id: number;
@@ -39,15 +37,15 @@ interface ChapterAPIItem {
   lock_type: string;
   lock_value: number;
   is_purchased: boolean;
-}
+};
 
-interface ChaptersResponse {
+type ChaptersResponse = {
   items: ChapterAPIItem[];
   total_pages: number;
   current_page: number;
-}
+};
 
-interface SearchResult {
+type SearchResult = {
   id: string;
   title: string;
   url: string;
@@ -57,7 +55,7 @@ interface SearchResult {
   date: string;
   category: string;
   excerpt: string;
-}
+};
 
 class TruyenCV implements Plugin.PagePlugin {
   id = 'truyencv.io';
