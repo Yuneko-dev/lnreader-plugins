@@ -20,7 +20,12 @@ type WPManga = {
   manga_status: string;
   _embedded?: {
     'wp:featuredmedia'?: { source_url: string }[];
-    'wp:term'?: { id: number; name: string; slug: string; taxonomy: string }[][];
+    'wp:term'?: {
+      id: number;
+      name: string;
+      slug: string;
+      taxonomy: string;
+    }[][];
   };
 };
 
@@ -102,9 +107,7 @@ class TruyenCV implements Plugin.PagePlugin {
   ): Promise<Plugin.SourceNovel & { totalPages: number }> {
     const slug = novelPath.replace(/^\/truyen\//, '').replace(/\/$/, '');
 
-    const res = await fetchApi(
-      `${API_BASE}/wp/v2/manga?slug=${slug}&_embed`,
-    );
+    const res = await fetchApi(`${API_BASE}/wp/v2/manga?slug=${slug}&_embed`);
     const data: WPManga[] = await res.json();
     const manga = data[0];
 
@@ -155,7 +158,9 @@ class TruyenCV implements Plugin.PagePlugin {
       name: manga.title?.rendered || 'Không có tiêu đề',
       cover:
         manga._embedded?.['wp:featuredmedia']?.[0]?.source_url || defaultCover,
-      summary: parseHTML(manga.content?.rendered || '').text().trim(),
+      summary: parseHTML(manga.content?.rendered || '')
+        .text()
+        .trim(),
       author,
       genres,
       status:
@@ -206,9 +211,7 @@ class TruyenCV implements Plugin.PagePlugin {
 
   async parseChapter(chapterPath: string): Promise<string> {
     const chapterId = chapterPath.split('/').pop();
-    const res = await fetchApi(
-      `${API_BASE}/initmanga/v1/chapter/${chapterId}`,
-    );
+    const res = await fetchApi(`${API_BASE}/initmanga/v1/chapter/${chapterId}`);
     const data = await res.json();
     const content: string = data.content || '';
     return content.split('\\"').join('"').split('\\/').join('/');

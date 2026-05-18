@@ -93,7 +93,8 @@ function deepFindContent(node: any, depth = 0): string {
     'html',
     'rawContent',
   ]) {
-    if (typeof node[key] === 'string' && node[key].trim()) return node[key].trim();
+    if (typeof node[key] === 'string' && node[key].trim())
+      return node[key].trim();
   }
   for (const key of [
     'chapter',
@@ -113,11 +114,21 @@ function deepFindContent(node: any, depth = 0): string {
 function extractCipher(payload: any): string {
   if (typeof payload === 'string') return payload.trim();
   const obj =
-    payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+    payload?.data &&
+    typeof payload.data === 'object' &&
+    !Array.isArray(payload.data)
       ? payload.data
       : payload;
-  for (const key of ['data', 'encrypted', 'encryption', 'payload', 'cipher', 'content']) {
-    if (typeof obj?.[key] === 'string' && obj[key].trim()) return obj[key].trim();
+  for (const key of [
+    'data',
+    'encrypted',
+    'encryption',
+    'payload',
+    'cipher',
+    'content',
+  ]) {
+    if (typeof obj?.[key] === 'string' && obj[key].trim())
+      return obj[key].trim();
   }
   return '';
 }
@@ -290,7 +301,10 @@ class MotTruyenPlugin implements Plugin.PluginBase {
     }
 
     const content = deepFindContent(
-      parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.data
+      parsed &&
+        typeof parsed === 'object' &&
+        !Array.isArray(parsed) &&
+        parsed.data
         ? parsed.data
         : parsed,
     );
