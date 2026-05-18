@@ -18,6 +18,7 @@ This is a fork of the original repository, containing only my custom plugins and
 - [tieuthuyetmang](https://tieuthuyetmang.com)
 - [TomatoMTL](https://tomatomtl.com)[^1]
 - [truyenfull](https://truyenfull.vision)
+- [TruyenCV](https://truyencv.io)
 - [Valvrareteam](https://valvrareteam.net)
 - [WanwanSekai](https://wanwansekai.com)
 - [ZumiNovel](https://zuminovel.com)[^1]
