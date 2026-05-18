@@ -17,9 +17,10 @@ import p_14 from '@plugins/vietnamese/SangTacViet';
 import p_15 from '@plugins/vietnamese/tieuthuyetmang';
 import p_16 from '@plugins/vietnamese/TomatoMTL';
 import p_17 from '@plugins/vietnamese/truyenfull';
-import p_18 from '@plugins/vietnamese/valvrareteam';
-import p_19 from '@plugins/vietnamese/wanwansekai';
-import p_20 from '@plugins/vietnamese/ZumiNovel';
+import p_18 from '@plugins/vietnamese/truyencv';
+import p_19 from '@plugins/vietnamese/valvrareteam';
+import p_20 from '@plugins/vietnamese/wanwansekai';
+import p_21 from '@plugins/vietnamese/ZumiNovel';
 
 const PLUGINS: Plugin.PluginBase[] = [
   p_0,
@@ -43,5 +44,6 @@ const PLUGINS: Plugin.PluginBase[] = [
   p_18,
   p_19,
   p_20,
+  p_21,
 ];
 export default PLUGINS;
