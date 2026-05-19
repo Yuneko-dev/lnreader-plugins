@@ -26,15 +26,19 @@ export default function SettingsSection() {
 
   const debouncedCookies = useDebounce(cookies, 500);
 
+  const isElectron = !!window.electronAPI;
+
   useEffect(() => {
-    fetch('settings')
-      .then(res => res.json())
-      .then(data => {
+    const p = isElectron
+      ? window.electronAPI!.invoke('settings:get')
+      : fetch('settings').then(res => res.json());
+      
+    p.then((data: any) => {
         if (data.cookies !== undefined) setCookies(data.cookies || '');
         if (data.fetchMode !== undefined) setFetchMode(data.fetchMode);
         if (data.useUserAgent !== undefined) setUseUserAgent(data.useUserAgent);
       })
-      .catch(err => console.error('Failed to load settings:', err))
+      .catch((err: any) => console.error('Failed to load settings:', err))
       .finally(() => setInitialLoaded(true));
   }, []);
 
@@ -48,19 +52,23 @@ export default function SettingsSection() {
   useEffect(() => {
     if (!initialLoaded) return;
     setLoading(true);
-    fetch('settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        cookies: debouncedCookies,
-        fetchMode: fetchMode,
-        useUserAgent: useUserAgent === true,
-      }),
-    })
-      .then(() => setAlertVisible(true))
-      .catch(error => console.error('Failed to save settings:', error))
+    
+    const settingsData = {
+      cookies: debouncedCookies,
+      fetchMode: fetchMode,
+      useUserAgent: useUserAgent === true,
+    };
+
+    const p = isElectron
+      ? window.electronAPI!.invoke('settings:set', settingsData)
+      : fetch('settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settingsData),
+        });
+
+    p.then(() => setAlertVisible(true))
+      .catch((error: any) => console.error('Failed to save settings:', error))
       .finally(() => setLoading(false));
   }, [debouncedCookies, fetchMode, useUserAgent, initialLoaded]);
 

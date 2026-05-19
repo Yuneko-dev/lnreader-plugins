@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Browser Tab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+  
+  <style>
+    :root {
+      --md-sys-color-surface: #fdfcff;
+      --md-sys-color-surface-container: #f0f0f4;
+      --md-sys-color-surface-container-high: #eaeaef;
+      --md-sys-color-on-surface: #1a1c1e;
+      --md-sys-color-on-surface-variant: #43474e;
+      --md-sys-color-outline-variant: #c4c6d0;
+      --md-sys-color-primary: #0061a4;
+      --md-sys-state-hover: rgba(26, 28, 30, 0.08);
+      --md-sys-state-pressed: rgba(26, 28, 30, 0.12);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --md-sys-color-surface: #1a1c1e;
+        --md-sys-color-surface-container: #1e1f22;
+        --md-sys-color-surface-container-high: #2b2930;
+        --md-sys-color-on-surface: #e2e2e6;
+        --md-sys-color-on-surface-variant: #c4c6d0;
+        --md-sys-color-outline-variant: #43474e;
+        --md-sys-color-primary: #9ecaff;
+        --md-sys-state-hover: rgba(226, 226, 230, 0.08);
+        --md-sys-state-pressed: rgba(226, 226, 230, 0.12);
+      }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body { 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+      font-family: 'Roboto', -apple-system, sans-serif; 
+      background: var(--md-sys-color-surface); 
+      color: var(--md-sys-color-on-surface);
+      overflow: hidden;
+    }
+    
+    #toolbar { 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+      padding: 8px 16px; 
+      background: var(--md-sys-color-surface-container); 
+      -webkit-app-region: drag;
+      height: 56px;
+    }
+    
+    .icon-button, #url-container { -webkit-app-region: no-drag; }
+    
+    .icon-button { 
+      width: 40px; 
+      height: 40px; 
+      border: none; 
+      border-radius: 50%; 
+      background: transparent; 
+      color: var(--md-sys-color-on-surface-variant); 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      transition: background-color 0.2s ease; 
+    }
+    
+    .icon-button:hover { 
+      background-color: var(--md-sys-state-hover); 
+      color: var(--md-sys-color-on-surface);
+    }
+    
+    .icon-button:active { 
+      background-color: var(--md-sys-state-pressed); 
+    }
+    
+    .material-symbols-rounded {
+      font-size: 20px;
+    }
+
+    #url-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background: var(--md-sys-color-surface-container-high);
+      border-radius: 24px;
+      height: 40px;
+      padding: 0 16px;
+      gap: 8px;
+      margin-left: 4px;
+      transition: background-color 0.2s, box-shadow 0.2s;
+    }
+    
+    #url-container:focus-within {
+      background: var(--md-sys-color-surface);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    }
+
+    #url-container .material-symbols-rounded {
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 18px;
+    }
+
+    #url { 
+      flex: 1; 
+      border: none; 
+      background: transparent; 
+      color: var(--md-sys-color-on-surface); 
+      font-size: 14px; 
+      font-family: inherit;
+      outline: none; 
+      height: 100%;
+    }
+    
+    #url::placeholder {
+      color: var(--md-sys-color-on-surface-variant);
+      opacity: 0.8;
+    }
+    
+    webview { 
+      flex: 1; 
+      border: none;
+      background: var(--md-sys-color-surface);
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button class="icon-button" id="back" title="Back">
+      <span class="material-symbols-rounded">arrow_back</span>
+    </button>
+    <button class="icon-button" id="forward" title="Forward">
+      <span class="material-symbols-rounded">arrow_forward</span>
+    </button>
+    <button class="icon-button" id="refresh" title="Refresh">
+      <span class="material-symbols-rounded">refresh</span>
+    </button>
+    
+    <div id="url-container">
+      <span class="material-symbols-rounded" id="security-icon">public</span>
+      <input id="url" type="text" placeholder="Search or type a URL" spellcheck="false" autocomplete="off" />
+    </div>
+    
+    <button class="icon-button" id="devtools" title="Open WebView DevTools">
+      <span class="material-symbols-rounded">bug_report</span>
+    </button>
+  </div>
+  
+  <webview id="browser" src="about:blank" partition="persist:lnreader_plugins" autosize="on"></webview>
+  
+  <script>
+    const webview = document.getElementById('browser');
+    const urlInput = document.getElementById('url');
+    const securityIcon = document.getElementById('security-icon');
+
+    document.getElementById('back').onclick = () => { if (webview.canGoBack()) webview.goBack(); };
+    document.getElementById('forward').onclick = () => { if (webview.canGoForward()) webview.goForward(); };
+    document.getElementById('devtools').onclick = () => webview.openDevTools();
+    
+    let isLoading = false;
+    const refreshBtn = document.getElementById('refresh');
+    const refreshIcon = refreshBtn.querySelector('.material-symbols-rounded');
+    
+    refreshBtn.onclick = () => {
+      if (isLoading) webview.stop();
+      else webview.reload();
+    };
+
+    function navigate() {
+      let url = urlInput.value.trim();
+      if (!url) return;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+      webview.loadURL(url);
+    }
+
+    urlInput.addEventListener('keydown', (e) => { 
+      if (e.key === 'Enter') {
+        navigate();
+        urlInput.blur();
+      }
+    });
+
+    urlInput.addEventListener('focus', () => urlInput.select());
+
+    webview.addEventListener('did-start-loading', () => {
+      isLoading = true;
+      refreshIcon.textContent = 'close';
+    });
+
+    webview.addEventListener('did-stop-loading', () => {
+      isLoading = false;
+      refreshIcon.textContent = 'refresh';
+    });
+
+    webview.addEventListener('did-navigate', (e) => { 
+      urlInput.value = e.url; 
+      document.title = 'Browser - ' + e.url; 
+      updateSecurityIcon(e.url);
+    });
+    
+    webview.addEventListener('did-navigate-in-page', (e) => { 
+      if (e.isMainFrame) {
+        urlInput.value = e.url; 
+        updateSecurityIcon(e.url);
+      }
+    });
+    
+    webview.addEventListener('page-title-updated', (e) => { 
+      document.title = e.title; 
+    });
+
+    function updateSecurityIcon(url) {
+      if (url.startsWith('https://')) {
+        securityIcon.textContent = 'lock';
+      } else if (url.startsWith('http://')) {
+        securityIcon.textContent = 'info';
+      } else {
+        securityIcon.textContent = 'public';
+      }
+    }
+  </script>
+</body>
+</html>

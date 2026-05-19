@@ -16,3 +16,7 @@ total.svg
 src/plugins/index.ts
 .history
 broken-sites-report.json
+electron/dist-electron
+
+# LLM skills
+.agent/

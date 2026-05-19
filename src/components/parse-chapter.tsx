@@ -13,7 +13,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAppStore } from '@/store';
-import { usePluginCustomAssets } from '@/hooks/usePluginCustomAssets';
 
 export default function ParseChapterSection() {
   const plugin = useAppStore(state => state.plugin);
@@ -29,9 +28,6 @@ export default function ParseChapterSection() {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [showRawHtml, setShowRawHtml] = useState(false);
-
-  const { customCSSLoaded, customJSLoaded, customCSSError, customJSError } =
-    usePluginCustomAssets(plugin, chapterText);
 
   const fetchChapterByPath = async (path: string) => {
     if (plugin && path.trim()) {
@@ -254,58 +250,44 @@ export default function ParseChapterSection() {
                     {chapterText}
                   </pre>
                 ) : (
-                  <div
-                    className="prose prose-sm dark:prose-invert max-w-none text-foreground"
-                    dangerouslySetInnerHTML={{
-                      __html: chapterText,
-                    }}
+                  <iframe
+                    title="Chapter Content Preview"
+                    srcDoc={`
+                      <!DOCTYPE html>
+                      <html>
+                        <head>
+                          <meta charset="utf-8">
+                          <meta name="viewport" content="width=device-width, initial-scale=1">
+                          <style>
+                            body { 
+                              font-family: system-ui, -apple-system, sans-serif;
+                              color: ${document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#1f2937'};
+                              margin: 0;
+                              padding: 0;
+                              line-height: 1.6;
+                            }
+                            img, video, iframe { max-width: 100%; height: auto; }
+                            a { color: #3b82f6; }
+                          </style>
+                          ${plugin?.customCSS ? `<link rel="stylesheet" href="/public/static/${plugin.customCSS}">` : ''}
+                        </head>
+                        <body>
+                          ${chapterText}
+                          ${plugin?.customJS ? `<script src="/public/static/${plugin.customJS}"></script>` : ''}
+                        </body>
+                      </html>
+                    `}
+                    className="w-full min-h-[500px] border-none bg-transparent"
+                    sandbox="allow-scripts allow-same-origin allow-popups"
                   />
                 )}
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-border">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm text-muted-foreground">
-                  Content loaded successfully
-                </p>
-                {plugin?.customCSS && (
-                  <span
-                    className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                      customCSSLoaded
-                        ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
-                        : customCSSError
-                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
-                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                    }`}
-                  >
-                    CSS:{' '}
-                    {customCSSLoaded
-                      ? '✓ Applied'
-                      : customCSSError
-                        ? '✗ Failed'
-                        : '⋯ Loading'}
-                  </span>
-                )}
-                {plugin?.customJS && (
-                  <span
-                    className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                      customJSLoaded
-                        ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
-                        : customJSError
-                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
-                          : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
-                    }`}
-                  >
-                    JS:{' '}
-                    {customJSLoaded
-                      ? '✓ Applied'
-                      : customJSError
-                        ? '✗ Failed'
-                        : '⋯ Loading'}
-                  </span>
-                )}
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Content loaded successfully
+              </p>
               <Button
                 variant="outline"
                 size="sm"
