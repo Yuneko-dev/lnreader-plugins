@@ -104,17 +104,11 @@ npm run serve:dev
 - Vào **Cài đặt -> Repositories**, thêm URL `http://<IP-của-máy-tính>:3000/.dist/plugins.min.json` và cập nhật.
 - Gỡ lỗi: Cài đặt và sử dụng plugin của bạn trên app thực. Nó cho phép test chính xác nhất hành vi của Custom JS/CSS trong Reader, tuy nhiên không có DevTools (console) để xem log nếu không dùng debug Application
 
-## Một số lưu ý khi sử dụng plugin tương thích với [LNReader-Extended](https://github.com/Yuneko-dev/lnreader-extended)
+## Plugin tương thích với ứng dụng [LNReader-Extended](https://github.com/Yuneko-dev/lnreader-extended)
 
-### 1. Sử dụng các thư viện tương thích với ứng dụng
+### 1. Sử dụng các thư viện được thêm mới
 
-- `@libs/aes`: Đã bổ sung `ctr`, `ecb`, `cbc`, `cfb`, `gcmsiv`, `aeskw`, `aeskwp`, `cmac` và `aessiv`, dựa trên thư viện `@noble/ciphers/aes.js`
-
-- `@libs/utils`: Đã bổ sung các hàm `utf8ToBytes`, `bytesToUtf8`; `Buffer` (polyfill, sử dụng như Buffer của Node.js), `NodeCrypto` (polyfill, sử dụng như node:crypto), `encodeHtmlEntities` và `decodeHtmlEntities` dựa trên thư viện `html-entities`
-
-- `@libs/fetch`: xóa bỏ `fetchFile` (do ứng dụng gốc cũng không có)
-
-- `@libs/cookie`: (Xem typing TypeScript) Một bộ API tương tác với `@preeternal/react-native-cookie-manager` (có giới hạn)
+- Xem phần [Additional APIs](https://github.com/Yuneko-dev/lnreader-plugins#additional-apis)
 
 ### 2. Các hành vi mới của ứng dụng
 
