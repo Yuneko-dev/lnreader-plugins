@@ -5,7 +5,7 @@ import { defaultCover } from '@libs/defaultCover';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
-import { Buffer, NodeCrypto, getUserAgent } from '@libs/utils';
+import { Buffer, NodeCrypto, getUserAgent, encodeHtmlEntities } from '@libs/utils';
 import { get, setFromResponse } from '@libs/cookie';
 
 const supportedLanguages: Record<string, string> = {
@@ -103,11 +103,6 @@ class NewtokiPlugin implements Plugin.PluginBase {
       type: 'Switch',
     },
     newtoki_translateLang: pluginSettingTranslate,
-    newtoki_translateContent: {
-      value: false,
-      label: 'Translate Chapter Content (Google Translate)',
-      type: 'Switch',
-    },
   };
 
   private defaultHeaders(): Record<string, string> {
@@ -126,9 +121,6 @@ class NewtokiPlugin implements Plugin.PluginBase {
     return storage.get('newtoki_translateLang') || 'en';
   }
 
-  get settingTranslateContent() {
-    return storage.get('newtoki_translateContent');
-  }
 
   async translateService(
     text: string,
@@ -171,6 +163,15 @@ class NewtokiPlugin implements Plugin.PluginBase {
     let s = str.replace(/-/g, '+').replace(/_/g, '/');
     while (s.length % 4 !== 0) s += '=';
     return Buffer.from(s, 'base64');
+  }
+
+  private textToParagraphs(text: string): string {
+    return text
+      .split(/\n{2,}/)
+      .map((p: string) => p.trim())
+      .filter((p: string) => p.length > 0)
+      .map((p: string) => `<p>${encodeHtmlEntities(p)}</p>`)
+      .join('');
   }
 
   private hmacSha256(key: string, message: string): string {
@@ -405,9 +406,9 @@ class NewtokiPlugin implements Plugin.PluginBase {
     });
 
     const tokenMatch = pageHtml.match(
-      /\\"token\\":\\"(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\\"/,
+      /\\"token\\":\\"(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)?)\\"/,
     ) || pageHtml.match(
-      /"token":"(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)"/,
+      /"token":"(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)?)"/,
     );
     if (!tokenMatch) {
       return '<p>Unable to load content.</p>';
@@ -483,51 +484,19 @@ class NewtokiPlugin implements Plugin.PluginBase {
 
     const decrypted = this.xorDecrypt(contentJson.payload, xorKey);
 
-    // Step 8: Parse the decrypted content
+    // Parse the decrypted content
     let chapterHtml = '';
     try {
       const parsed = JSON.parse(decrypted);
       if (parsed.kind === 'html' && typeof parsed.html === 'string') {
         chapterHtml = parsed.html;
       } else if (parsed.kind === 'text' && typeof parsed.text === 'string') {
-        chapterHtml = parsed.text
-          .split(/\n{2,}/)
-          .map((p: string) => p.trim())
-          .filter((p: string) => p.length > 0)
-          .map((p: string) => `<p>${p}</p>`)
-          .join('');
+        chapterHtml = this.textToParagraphs(parsed.text);
       } else {
-        chapterHtml = decrypted
-          .split(/\n{2,}/)
-          .map((p: string) => p.trim())
-          .filter((p: string) => p.length > 0)
-          .map((p: string) => `<p>${p}</p>`)
-          .join('');
+        chapterHtml = this.textToParagraphs(decrypted);
       }
     } catch {
-      // Not JSON, treat as plain text
-      chapterHtml = decrypted
-        .split(/\n{2,}/)
-        .map((p: string) => p.trim())
-        .filter((p: string) => p.length > 0)
-        .map((p: string) => `<p>${p}</p>`)
-        .join('');
-    }
-
-    // Translate content if enabled
-    if (this.settingTranslateContent && chapterHtml) {
-      // Extract text content, translate, and rebuild
-      const $ = loadCheerio(`<div>${chapterHtml}</div>`);
-      const textContent = $('div').text();
-      if (textContent.trim()) {
-        const translated = await this.translateService(textContent, undefined, 'ko');
-        chapterHtml = translated
-          .split(/\n{2,}/)
-          .map((p: string) => p.trim())
-          .filter((p: string) => p.length > 0)
-          .map((p: string) => `<p>${p}</p>`)
-          .join('');
-      }
+      chapterHtml = this.textToParagraphs(decrypted);
     }
 
     return chapterHtml || '<p>No content available.</p>';
