@@ -54,10 +54,12 @@ class TemplatePlugin implements Plugin.PluginBase {
   async popularNovels(
     pageNo: number,
     {
-      showLatestNovels, // Boolean, sử dụng để phân biệt giữa popular và latest. Nhưng mà hình như ứng dụng cũng không có tùy chọn này ;-;
+      showLatestNovels, // Boolean, sử dụng để phân biệt giữa popular và latest. Trong màn hình Plugin, ở góc cuối plugin sẽ có mục "Latest"
       filters, // Filter hiện tại đang apply. Sử dụng object giống như filters đã được định nghĩa ở trên, nhưng có thể có thêm trường value để lấy giá trị của filter đó.
     }: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
+    // Khi sử dụng showLatestNovels, sẽ bỏ qua toàn bộ filters.
+    // Tức là ứng dụng sẽ không gửi dữ liệu filters, nếu fetch latest thì nên dùng 1 bộ filters mặc định
     const novels: Plugin.NovelItem[] = [];
     // Thêm đoạn mã xử lý thực tế vào đây.
     // Sử dụng hàm fetchApi giống như fetch Web API thông thường.
