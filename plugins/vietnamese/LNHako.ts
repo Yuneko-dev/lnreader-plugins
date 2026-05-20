@@ -109,7 +109,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.2';
+  version = '1.2.3';
 
   pluginSettings: Plugin.PluginSettings = {
     usingDocln: {
@@ -531,11 +531,16 @@ class HakoPlugin implements Plugin.PluginBase {
     return this.parseNovels(url);
   }
 
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
+  }
+
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
       Referer: this.site,
     },
   };
+
   filters = {
     alphabet: {
       type: FilterTypes.Picker,

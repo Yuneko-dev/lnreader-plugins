@@ -86,8 +86,8 @@ class NocSyosetu implements Plugin.PagePlugin {
   id = 'noc.syosetu';
   name = 'NocSyosetu';
   icon = 'src/jp/nocsyosetu/icon.png';
-  site = 'https://noc.syosetu.com/';
-  version = '1.1.14';
+  site = 'https://noc.syosetu.com';
+  version = '1.1.15';
 
   pluginSettings: Plugin.PluginSettings = {
     nocsyosetu_translate: {
@@ -98,7 +98,7 @@ class NocSyosetu implements Plugin.PagePlugin {
     nocsyosetu_translateLang: pluginSettingTranslate,
   };
 
-  async preFetch(url: string) {
+  private async checkR18Cookie(url: string) {
     const urlObj = new URL(url);
     // check over18 cookie
     const cookies = await get(urlObj.origin);
@@ -345,37 +345,44 @@ class NocSyosetu implements Plugin.PagePlugin {
     pageNo: number,
     options: Plugin.PopularNovelsOptions<Filters>,
   ): Promise<Plugin.NovelItem[]> {
-    const { filters } = options;
-    let url = `${this.site}search/search/search.php?order_former=search&p=${pageNo}&word=&order=new&ispickup=1`;
+    const { filters, showLatestNovels } = options;
 
-    if (
+    const urlObject = new URL(`${this.site}/search/search/search.php`);
+    const params = urlObject.searchParams;
+
+    params.set('order_former', 'search');
+    params.set('p', pageNo.toString());
+    params.set('word', '');
+
+    const isCustomFilter =
+      !showLatestNovels &&
       filters &&
-      (filters.order.value !== 'new' ||
-        filters.type.value ||
-        (Array.isArray(filters.scope.value) &&
-          filters.scope.value.length > 0) ||
-        (Array.isArray(filters.tags.value) && filters.tags.value.length > 0) ||
-        (Array.isArray(filters.tag.value) && filters.tag.value.length > 0))
-    ) {
-      url = `${this.site}search/search/search.php?order_former=search&p=${pageNo}&word=`;
-      if (filters.order.value) {
-        url += `&order=${filters.order.value}`;
-      }
-      if (filters.type.value) {
-        url += `&type=${filters.type.value}`;
-      }
-      if (Array.isArray(filters.scope?.value)) {
-        filters.scope.value.forEach(s => (url += `&${s}=1`));
-      }
-      if (Array.isArray(filters.tags?.value)) {
-        filters.tags.value.forEach(t => (url += `&${t}=1`));
-      }
-      if (Array.isArray(filters.tag?.value)) {
-        filters.tag.value.forEach(t => (url += `&${t}=1`));
-      }
+      (filters.order?.value !== 'new' ||
+        filters.type?.value ||
+        (filters.scope?.value as any[])?.length ||
+        (filters.tags?.value as any[])?.length ||
+        (filters.tag?.value as any[])?.length);
+
+    if (isCustomFilter) {
+      if (filters.order?.value)
+        params.set('order', filters.order.value as string);
+      if (filters.type?.value) params.set('type', filters.type.value as string);
+
+      ['scope', 'tags', 'tag'].forEach(key => {
+        const arr = filters[key]?.value;
+        if (Array.isArray(arr)) {
+          arr.forEach(val => params.set(val as string, '1'));
+        }
+      });
+    } else {
+      params.set('order', 'new');
+      params.set('ispickup', '1');
+      params.set('type', '');
     }
 
-    await this.preFetch(url);
+    const url = urlObject.toString();
+
+    await this.checkR18Cookie(url);
 
     const body = await fetchText(url);
 
@@ -404,20 +411,6 @@ class NocSyosetu implements Plugin.PagePlugin {
 
   parseChapters($page: any): Plugin.ChapterItem[] {
     const chapters: Plugin.ChapterItem[] = [];
-
-    //    const chapterSelectors =
-    //      '.novel_sublist2 .subtitle a, .p-eplist__sublist a.p-eplist__subtitle, .index_box .subtitle a';
-    //    $page(chapterSelectors).each((i: number, el: any) => {
-    //      const name = $page(el).text().trim();
-    //      const path = $page(el).attr('href');
-    //      if (name && path) {
-    //        chapters.push({
-    //          name,
-    //          path: this.normalizeNovelUrl(path),
-    //          releaseTime: '',
-    //        });
-    //      }
-    //    });
 
     $page('.p-eplist__sublist').each((i: number, element: any) => {
       const chapterLink = $page(element).find('a');
@@ -455,7 +448,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   async parseNovel(
     novelUrl: string,
   ): Promise<Plugin.SourceNovel & { totalPages: number }> {
-    await this.preFetch(novelUrl);
+    await this.checkR18Cookie(novelUrl);
 
     const body = await fetchText(novelUrl);
 
@@ -547,7 +540,7 @@ class NocSyosetu implements Plugin.PagePlugin {
     const url = new URL(novelPath);
     url.searchParams.set('p', page);
 
-    await this.preFetch(url.toString());
+    await this.checkR18Cookie(url.toString());
 
     const body = await fetchText(url.toString());
     const $ = loadCheerio(body);
@@ -558,7 +551,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   }
 
   async parseChapter(chapterPath: string): Promise<string> {
-    await this.preFetch(chapterPath);
+    await this.checkR18Cookie(chapterPath);
 
     const body = await fetchText(chapterPath);
 
@@ -586,7 +579,7 @@ class NocSyosetu implements Plugin.PagePlugin {
       finalSearchTerm = await this.translateService(searchTerm, 'ja', 'auto');
     }
 
-    const url = `${this.site}search/search/search.php?order_former=search&word=${encodeURIComponent(
+    const url = `${this.site}/search/search/search.php?order_former=search&word=${encodeURIComponent(
       finalSearchTerm,
     )}${
       pageNo !== undefined
@@ -594,7 +587,7 @@ class NocSyosetu implements Plugin.PagePlugin {
         : '' // if isn't don't set ?p
     }`;
 
-    await this.preFetch(url);
+    await this.checkR18Cookie(url);
 
     const body = await fetchText(url);
 
@@ -632,6 +625,10 @@ class NocSyosetu implements Plugin.PagePlugin {
         'Failed to load novels. Please check the age gate in WebView. / 小説の読み込みに失敗しました。WebViewでの年齢確認をご確認ください。',
       );
     }
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return path;
   }
 }
 

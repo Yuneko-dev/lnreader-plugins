@@ -415,7 +415,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.18';
+  version = '1.0.19';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -954,6 +954,10 @@ class SangTacVietPlugin implements Plugin.PluginBase {
     url.searchParams.set('p', String(pageNo));
     const html = await fetchText(url.toString());
     return this.parseNovelsFromHTML(html);
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 
   filters = {

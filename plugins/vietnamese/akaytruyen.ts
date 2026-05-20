@@ -2,11 +2,12 @@ import { fetchApi } from '@libs/fetch';
 import { CheerioAPI, load } from 'cheerio';
 import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
+import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 
 class AkayTruyenPlugin implements Plugin.PagePlugin {
   id = 'akaytruyen.com';
   name = 'AkayTruyen';
-  version = '1.0.2';
+  version = '1.0.3';
   icon = 'src/vi/akaytruyen/favicon.png';
   site = 'https://akaytruyen.com';
 
@@ -161,6 +162,14 @@ class AkayTruyenPlugin implements Plugin.PagePlugin {
     });
 
     return novels;
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    if (isUrlAbsolute(path)) {
+      return path;
+    } else {
+      return this.site + path;
+    }
   }
 
   filters = {};

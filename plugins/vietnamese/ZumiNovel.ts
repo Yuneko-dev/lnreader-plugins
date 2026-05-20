@@ -127,7 +127,7 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
   name = 'ZumiNovel';
   icon = 'src/vi/zuminovel/icon.png';
   site = SITE;
-  version = '1.0.2';
+  version = '1.0.3';
 
   pluginSettings: Plugin.PluginSettings = {
     showRaw: {
@@ -197,9 +197,10 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
     const res = await fetchApi(url, {
       headers: { Accept: 'application/json', Referer: this.site + '/' },
     });
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error(res.statusText);
     const json = await res.json().catch(() => null);
-    if (!json?.success || !Array.isArray(json.data)) return [];
+    if (!json?.success || !Array.isArray(json.data))
+      throw new Error('Invalid data: ' + json);
 
     const items: Plugin.NovelItem[] = [];
     for (const raw of json.data as ZumiNovel[]) {
@@ -440,6 +441,10 @@ class ZumiNovelPlugin implements Plugin.PluginBase {
     if (!content) return title ? `<h2>${title}</h2>` : '';
 
     return `<h2>${title}</h2>\n${content}`;
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 
   imageRequestInit: Plugin.ImageRequestInit = {

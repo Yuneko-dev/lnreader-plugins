@@ -22,7 +22,7 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
   name = 'Tiểu Thuyết Mạng';
   icon = 'src/vi/tieuthuyetmang/icon.png';
   site = 'https://tieuthuyetmang.com';
-  version = '1.0.5';
+  version = '1.0.6';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
@@ -359,6 +359,10 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
     });
 
     return novels;
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 
   filters = undefined;

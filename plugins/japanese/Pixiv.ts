@@ -86,7 +86,7 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
   name = 'Pixiv Novel';
   icon = 'src/jp/pixivnovel/icon.png';
   site = 'https://www.pixiv.net';
-  version = '1.0.10';
+  version = '1.0.11';
 
   pluginSettings: Plugin.PluginSettings = {
     pixiv_translate: {
@@ -492,6 +492,18 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
     }
 
     return novels;
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    if (isNovel) {
+      return this.site + path;
+    } else {
+      // chapter path: /ajax/novel/<id> -> /novel/show.php?id=<id>
+      return (
+        this.site +
+        `/novel/show.php?id=${path.replace('/ajax/novel/', '').trim()}`
+      );
+    }
   }
 
   get filters(): Filters {

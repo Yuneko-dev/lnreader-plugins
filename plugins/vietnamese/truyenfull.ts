@@ -8,8 +8,8 @@ class TruyenFull implements Plugin.PagePlugin {
   id = 'truyenfull';
   name = 'Truyện Full';
   icon = 'src/vi/truyenfull/icon.png';
-  site = 'https://truyenfull.vision';
-  version = '1.0.2';
+  site = 'https://truyenfull.today';
+  version = '1.0.3';
 
   parseNovels(loadedCheerio: CheerioAPI) {
     const novels: Plugin.NovelItem[] = [];
@@ -33,6 +33,7 @@ class TruyenFull implements Plugin.PagePlugin {
     });
     return novels;
   }
+
   parseChapters(loadedCheerio: CheerioAPI): Plugin.ChapterItem[] {
     return loadedCheerio('ul.list-chapter > li > a')
       .toArray()
@@ -45,6 +46,7 @@ class TruyenFull implements Plugin.PagePlugin {
         };
       });
   }
+
   async popularNovels(
     pageNo: number,
     { filters }: Plugin.PopularNovelsOptions<typeof this.filters>,
@@ -68,6 +70,7 @@ class TruyenFull implements Plugin.PagePlugin {
     const loadedCheerio = parseHTML(body);
     return this.parseNovels(loadedCheerio);
   }
+
   async parseNovel(
     novelPath: string,
   ): Promise<Plugin.SourceNovel & { totalPages: number }> {
@@ -117,6 +120,7 @@ class TruyenFull implements Plugin.PagePlugin {
     novel.chapters = this.parseChapters(loadedCheerio);
     return novel;
   }
+
   async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
     const url = `${this.site}${novelPath}trang-${page}/#list-chapter`;
     const result = await fetchApi(url);
@@ -128,6 +132,7 @@ class TruyenFull implements Plugin.PagePlugin {
       chapters,
     };
   }
+
   async parseChapter(chapterPath: string): Promise<string> {
     const result = await fetchApi(this.site + chapterPath);
     const body = await result.text();
@@ -140,6 +145,7 @@ class TruyenFull implements Plugin.PagePlugin {
 
     return chapterText;
   }
+
   async searchNovels(
     searchTerm: string,
     pageNo: number,
@@ -152,6 +158,11 @@ class TruyenFull implements Plugin.PagePlugin {
     const loadedCheerio = parseHTML(body);
     return this.parseNovels(loadedCheerio);
   }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
+  }
+
   filters = {
     status: {
       type: FilterTypes.CheckboxGroup,

@@ -12,7 +12,7 @@ class BaoMoiPlugin implements Plugin.PluginBase {
   name = 'Báo Mới';
   icon = 'src/vi/baomoi/icon.png';
   site = 'https://baomoi.com';
-  version = '1.0.7';
+  version = '1.0.8';
   filters: Filters = {
     page: {
       label: 'Tìm theo trang',
@@ -374,6 +374,10 @@ class BaoMoiPlugin implements Plugin.PluginBase {
       );
     }
     return novels;
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 }
 

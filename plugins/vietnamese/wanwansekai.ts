@@ -8,8 +8,8 @@ class WanwanSekaiPlugin implements Plugin.PluginBase {
   id = 'wanwansekai';
   name = 'WanwanSekai';
   icon = 'src/vi/wanwansekai/icon.png';
-  site = 'https://wanwansekai.com/';
-  version = '1.0.1';
+  site = 'https://wanwansekai.com';
+  version = '1.0.2';
 
   private allNovels: Plugin.NovelItem[] = [];
 
@@ -163,6 +163,10 @@ class WanwanSekaiPlugin implements Plugin.PluginBase {
     return {
       chapters: novel.chapters || [],
     };
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 }
 

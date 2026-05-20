@@ -126,7 +126,7 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
   name = 'TomatoMTL';
   icon = 'src/vi/tomatomtl/icon.png';
   site = SITE;
-  version = '1.0.4';
+  version = '1.0.5';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -778,6 +778,10 @@ class TomatoMTLPlugin implements Plugin.PluginBase {
 
   private detectLoginRequired(html: string): boolean {
     return /Login Required|need to log in to read chapter content/i.test(html);
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 
   // ─── Filters mirror the /fanqie-explorer page selectors ────

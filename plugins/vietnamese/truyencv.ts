@@ -66,7 +66,7 @@ class TruyenCV implements Plugin.PagePlugin {
   name = 'TruyenCV';
   icon = 'src/vi/truyencv/icon.png';
   site = 'https://truyencv.io';
-  version = '1.0.0';
+  version = '1.0.1';
 
   private mangaIdCache = new Map<string, string>();
 
@@ -240,6 +240,11 @@ class TruyenCV implements Plugin.PagePlugin {
           cover: item.thumb || defaultCover,
         };
       });
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    if (isNovel) return this.site + path;
+    else return this.site; // idk
   }
 
   private mapChapters(items: ChapterAPIItem[]): Plugin.ChapterItem[] {

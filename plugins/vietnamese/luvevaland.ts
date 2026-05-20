@@ -10,7 +10,7 @@ class LuvevalandPlugin implements Plugin.PluginBase {
   name = 'Luvevaland';
   icon = 'src/vi/luvevaland/icon.png';
   site = 'https://luvevaland.co';
-  version = '1.0.1';
+  version = '1.0.2';
   filters: Filters | undefined = undefined;
 
   async popularNovels(
@@ -196,6 +196,10 @@ class LuvevalandPlugin implements Plugin.PluginBase {
       });
     });
     return novels;
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 }
 

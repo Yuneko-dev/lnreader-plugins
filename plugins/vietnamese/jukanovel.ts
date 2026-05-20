@@ -12,7 +12,7 @@ class JukaNovelPlugin implements Plugin.PluginBase {
   name = 'JukaNovel';
   icon = 'src/vi/jukanovel/icon.png';
   site = 'https://jukaza.site';
-  version = '1.0.4';
+  version = '1.0.5';
 
   pluginSettings: Plugin.PluginSettings = {
     preferRaw: {
@@ -107,14 +107,15 @@ class JukaNovelPlugin implements Plugin.PluginBase {
     this.checkLogin($);
     const scriptContent = $('script:contains("__READER_DATA__")').html() || '';
     const match = scriptContent.match(/window\.__READER_DATA__\s*=\s*(.*?});/);
-    if (!match) return 'Không tìm thấy dữ liệu chương.';
+    if (!match) throw new Error('Không tìm thấy dữ liệu chương.');
 
     try {
       const readerData = JSON.parse(match[1]);
       const chapterContent = this.decryptJukaNovel(readerData);
+      if (!chapterContent) throw new Error('chapterContent = null');
       return chapterContent;
     } catch (e) {
-      return 'Lỗi xử lý dữ liệu chương.';
+      throw new Error('Lỗi xử lý dữ liệu chương: ' + (e as any).message);
     }
   }
   async searchNovels(
@@ -352,6 +353,10 @@ class JukaNovelPlugin implements Plugin.PluginBase {
       }
     });
     return novels;
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 }
 

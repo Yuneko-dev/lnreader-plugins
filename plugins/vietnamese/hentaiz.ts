@@ -452,7 +452,7 @@ class HentaiZPlugin implements Plugin.PluginBase {
   name = 'HentaiZ';
   icon = 'src/vi/hentaiz/icon.png';
   site = SITE;
-  version = '1.0.5';
+  version = '1.0.6';
 
   customJS = 'src/vi/hentaiz/player.js';
 
@@ -605,10 +605,15 @@ class HentaiZPlugin implements Plugin.PluginBase {
 
   async popularNovels(
     pageNo: number,
-    { filters }: Plugin.PopularNovelsOptions<typeof this.filters>,
+    {
+      filters,
+      showLatestNovels,
+    }: Plugin.PopularNovelsOptions<typeof this.filters>,
   ): Promise<Plugin.NovelItem[]> {
     const url = this.buildBrowseUrl(pageNo, {
-      sort: filters?.sort?.value || 'publishedAt_desc',
+      sort:
+        (showLatestNovels ? 'publishedAt_desc' : filters?.sort?.value) ||
+        'publishedAt_desc',
       animationType: filters?.animationType?.value || 'ALL',
       contentRating: filters?.contentRating?.value || 'ALL',
       isTrailer: filters?.isTrailer?.value || 'ALL',
@@ -759,7 +764,11 @@ class HentaiZPlugin implements Plugin.PluginBase {
       });
     }
 
-    novel.chapters = chapters;
+    const seen = new Set();
+    const uniqueChapters = chapters.filter(
+      c => !seen.has(c.path) && seen.add(c.path),
+    );
+    novel.chapters = uniqueChapters;
     return novel;
   }
 
@@ -857,6 +866,10 @@ class HentaiZPlugin implements Plugin.PluginBase {
       `<p style="color:#888;font-size:12px;font-family:sans-serif;text-align:center;margin:4px 0;">${mode}</p>`,
       '<meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>',
     ].join('\n');
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 }
 

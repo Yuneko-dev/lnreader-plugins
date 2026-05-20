@@ -7,14 +7,12 @@ import { NovelStatus } from '@libs/novelStatus';
 import { encodeHtmlEntities } from '@libs/utils';
 import { storage } from '@libs/storage';
 
-const SITE = 'https://animevietsub.site';
-
 class AnimeVietsubPlugin implements Plugin.PluginBase {
   id = 'animevietsub';
   name = 'AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
-  site = SITE;
-  version = '1.0.9';
+  site = 'https://animevietsub.site';
+  version = '1.0.10';
 
   customJS = 'src/vi/animevietsub/player.js';
 
@@ -32,7 +30,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
-      Referer: SITE + '/',
+      Referer: this.site + '/',
     },
   };
 
@@ -344,8 +342,8 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   private absolutePath(href: string): string {
     if (!href) return '';
     try {
-      const u = new URL(href, SITE);
-      if (u.origin === SITE) return u.pathname + u.search;
+      const u = new URL(href, this.site);
+      if (u.origin === this.site) return u.pathname + u.search;
       return href;
     } catch {
       return href;
@@ -439,7 +437,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     const country = filters.country.value || 'all';
     const page = pageNo > 1 ? `trang-${pageNo}.html` : '';
     const url = new URL(
-      `${SITE}/danh-sach/${category}/${genreList}/${season}/${year}/${studio}/${age}/${country}/${page}`,
+      `${this.site}/danh-sach/${category}/${genreList}/${season}/${year}/${studio}/${age}/${country}/${page}`,
     );
     url.searchParams.set('sort', filters.sort.value || 'latest');
     // Build URL
@@ -462,8 +460,8 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     const term = encodeURIComponent(searchTerm.trim());
     const url =
       pageNo <= 1
-        ? `${SITE}/tim-kiem/${term}/F`
-        : `${SITE}/tim-kiem/${term}/trang-${pageNo}.html`;
+        ? `${this.site}/tim-kiem/${term}/F`
+        : `${this.site}/tim-kiem/${term}/trang-${pageNo}.html`;
     const html = await fetchText(url);
     return this.parseListHtml(html);
   }
@@ -471,7 +469,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   // ---------- parseNovel ----------
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
-    const url = SITE + novelPath;
+    const url = this.site + novelPath;
     const html = await fetchText(url);
     const $ = loadCheerio(html);
     this.checkCommonBlocked($);
@@ -529,7 +527,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
       try {
         const epPageUrl = latestEpHref.startsWith('http')
           ? latestEpHref
-          : SITE + latestEpHref;
+          : this.site + latestEpHref;
         const epHtml = await fetchText(epPageUrl);
         novel.chapters = this.parseEpisodeList(epHtml);
       } catch (e) {
@@ -581,7 +579,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   //   4. Fallback: extract data-hash/data-id for AJAX approach in customJS
 
   async parseChapter(chapterPath: string): Promise<string> {
-    const url = SITE + chapterPath;
+    const url = this.site + chapterPath;
     const html = await fetchText(url);
 
     // ── 1. Try extracting window.PLAYER_DATA from inline scripts ──
@@ -601,7 +599,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
         ) {
           try {
             const playerHtml = await fetchText(pd.link, {
-              headers: { Referer: SITE + '/' },
+              headers: { Referer: this.site + '/' },
             });
             const idM = playerHtml.match(/const\s+id\s*=\s*"([0-9a-f]+)"/);
             const tokM = playerHtml.match(/const\s+avsToken\s*=\s*"([^"]+)"/);
@@ -707,7 +705,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
         hash: dataHash,
         id: dataId,
         referer: url,
-        site: SITE,
+        site: this.site,
       });
     }
 
@@ -749,6 +747,10 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
       `<p style="color:#888;font-size:12px;font-family:sans-serif;text-align:center;margin:4px 0;">${mode}</p>`,
       '<meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>',
     ].join('\n');
+  }
+
+  resolveUrl(path: string, isNovel?: boolean): string {
+    return this.site + path;
   }
 }
 
