@@ -32,12 +32,12 @@ export default function SettingsSection() {
     const p = isElectron
       ? window.electronAPI!.invoke('settings:get')
       : fetch('settings').then(res => res.json());
-      
+
     p.then((data: any) => {
-        if (data.cookies !== undefined) setCookies(data.cookies || '');
-        if (data.fetchMode !== undefined) setFetchMode(data.fetchMode);
-        if (data.useUserAgent !== undefined) setUseUserAgent(data.useUserAgent);
-      })
+      if (data.cookies !== undefined) setCookies(data.cookies || '');
+      if (data.fetchMode !== undefined) setFetchMode(data.fetchMode);
+      if (data.useUserAgent !== undefined) setUseUserAgent(data.useUserAgent);
+    })
       .catch((err: any) => console.error('Failed to load settings:', err))
       .finally(() => setInitialLoaded(true));
   }, []);
@@ -52,7 +52,7 @@ export default function SettingsSection() {
   useEffect(() => {
     if (!initialLoaded) return;
     setLoading(true);
-    
+
     const settingsData = {
       cookies: debouncedCookies,
       fetchMode: fetchMode,

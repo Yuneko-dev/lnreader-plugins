@@ -20,8 +20,8 @@
     "serve:dev": "npm run build:compile && npm run build:manifest:dev && serve",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
-    "format": "prettier --write \"./**/*.{js,ts}\"",
-    "format:check": "prettier --check \"./**/*.{js,ts}\"",
+    "format": "prettier --write \"./**/*.{ts,tsx,js,css}\"",
+    "format:check": "prettier --check \"./**/*.{ts,tsx,js,css}\"",
     "check:sites": "node scripts/check-plugin-sites.js",
     "prepare": "husky"
   },

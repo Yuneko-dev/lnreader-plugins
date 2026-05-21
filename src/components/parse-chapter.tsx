@@ -295,12 +295,9 @@ export default function ParseChapterSection() {
                             img, video, iframe { max-width: 100%; height: auto; }
                             a { color: #3b82f6; }
                           </style>
-                          ${
-                            isElectron ? readerMockScript : ''
-                          }
+                          ${isElectron ? readerMockScript : ''}
                           ${
                             plugin?.customCSS
-
                               ? `<link rel="stylesheet" href="/public/static/${plugin.customCSS}" onload="window.parent.postMessage({ type: 'asset-loaded', asset: 'css' }, '*')" onerror="window.parent.postMessage({ type: 'asset-error', asset: 'css' }, '*')">`
                               : ''
                           }
