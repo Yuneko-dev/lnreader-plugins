@@ -93,7 +93,7 @@ class NewtokiPlugin implements Plugin.PluginBase {
   name = 'Newtoki';
   icon = 'src/kr/newtoki/icon.png';
   site = 'https://sbxh1.com';
-  version = '1.0.1';
+  version = '1.0.2';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
@@ -301,7 +301,13 @@ class NewtokiPlugin implements Plugin.PluginBase {
     }
 
     const body = await fetchText(url, { headers: this.defaultHeaders() });
+    if (!body) {
+      throw new Error(
+        'This website is using Cloudflare to protect against malicious bots. Use WebView to bypass it.',
+      );
+    }
     const $ = loadCheerio(body);
+
     const novels = this.parseNovelList($);
 
     if (this.settingTranslate && novels.length > 0) {
@@ -322,6 +328,11 @@ class NewtokiPlugin implements Plugin.PluginBase {
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     const url = `${this.site}${novelPath}`;
     const body = await fetchText(url, { headers: this.defaultHeaders() });
+    if (!body) {
+      throw new Error(
+        'This website is using Cloudflare to protect against malicious bots. Use WebView to bypass it.',
+      );
+    }
     const $ = loadCheerio(body);
 
     // Parse novel info
@@ -431,13 +442,13 @@ class NewtokiPlugin implements Plugin.PluginBase {
         /"token":"(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)?)"/,
       );
     if (!tokenMatch) {
-      return '<p>Unable to load content.</p>';
+      throw new Error('Unable to load content (token not found).');
     }
     const token = tokenMatch[1];
 
     const pathMatch = chapterPath.match(/\/novel\/(\d+)\/(\d+)/);
     if (!pathMatch) {
-      return '<p>Invalid chapter path.</p>';
+      throw new Error('Invalid chapter path.');
     }
     const novelId = pathMatch[1];
     const episodeId = pathMatch[2];
@@ -469,7 +480,7 @@ class NewtokiPlugin implements Plugin.PluginBase {
     }
 
     if (!nvCookie) {
-      return '<p>Unable to load content.</p>';
+      throw new Error('Unable to load content (nv cookie not found).');
     }
 
     // Generate nonce
@@ -495,11 +506,11 @@ class NewtokiPlugin implements Plugin.PluginBase {
     const contentJson = await contentRes.json();
 
     if (!contentJson.ok || contentJson.empty || !contentJson.payload) {
-      return '<p>Unable to load content.</p>';
+      throw new Error('Unable to load content (json error).');
     }
     const xorKey = nvCookie.split('.')[0] || '';
     if (!xorKey) {
-      return '<p>Decryption key not available.</p>';
+      throw new Error('Decryption key not available.');
     }
 
     const decrypted = this.xorDecrypt(contentJson.payload, xorKey);
@@ -519,7 +530,8 @@ class NewtokiPlugin implements Plugin.PluginBase {
       chapterHtml = this.textToParagraphs(decrypted);
     }
 
-    return chapterHtml || '<p>No content available.</p>';
+    if (!chapterHtml) throw new Error('No content available.');
+    return chapterHtml;
   }
 
   async searchNovels(
@@ -536,7 +548,13 @@ class NewtokiPlugin implements Plugin.PluginBase {
     )}`;
 
     const body = await fetchText(url, { headers: this.defaultHeaders() });
+    if (!body) {
+      throw new Error(
+        'This website is using Cloudflare to protect against malicious bots. Use WebView to bypass it.',
+      );
+    }
     const $ = loadCheerio(body);
+
     const novels = this.parseNovelList($);
 
     if (this.settingTranslate && novels.length > 0) {
