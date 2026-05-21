@@ -3,7 +3,7 @@ import { performNetRequest } from '../ipc/fetch-handler.js';
 import { customSession } from '../main.js';
 
 export function registerLnproxyProtocol() {
-  customSession.protocol.handle('lnproxy', async (req) => {
+  customSession.protocol.handle('lnproxy', async req => {
     // Handle OPTIONS request for preflight just in case, though Custom Protocol with corsEnabled shouldn't need it.
     if (req.method === 'OPTIONS') {
       return new Response(null, {
@@ -11,8 +11,8 @@ export function registerLnproxyProtocol() {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': '*',
-          'Access-Control-Allow-Headers': '*'
-        }
+          'Access-Control-Allow-Headers': '*',
+        },
       });
     }
 
@@ -46,15 +46,15 @@ export function registerLnproxyProtocol() {
       const responseData = await performNetRequest(targetUrl, {
         method: req.method,
         headers: headers,
-        body: bodyData
+        body: bodyData,
       });
 
       const resHeaders = new Headers(responseData.headers);
-      
+
       // Node fetch/net automatically decompresses but keeps original headers, causing issues when piped to Chromium
       resHeaders.delete('content-encoding');
       resHeaders.delete('content-length');
-      
+
       // Always allow CORS
       resHeaders.set('Access-Control-Allow-Origin', '*');
       resHeaders.set('Access-Control-Allow-Headers', '*');
@@ -67,7 +67,6 @@ export function registerLnproxyProtocol() {
         statusText: responseData.statusMessage,
         headers: resHeaders,
       });
-
     } catch (error) {
       console.error('[lnproxy] Request error:', error);
       return new Response(String(error), { status: 500 });
