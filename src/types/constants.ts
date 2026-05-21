@@ -9,4 +9,4 @@ export const NovelStatus = {
 } as const;
 
 export const defaultCover =
-  'https://github.com/LNReader/lnreader-plugins/blob/main/icons/src/coverNotAvailable.jpg?raw=true';
+  'https://github.com/Yuneko-dev/lnreader-plugins/blob/main/icons/src/coverNotAvailable.jpg?raw=true';

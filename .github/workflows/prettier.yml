@@ -30,4 +30,5 @@ jobs:
           npm install prettier@3.2.5
 
       - name: Check Code Formatting
-        run: npx prettier --check "./src/**/*.{ts,tsx,js,css}"
+        # run: npx prettier --check "./src/**/*.{ts,tsx,js,css}"
+        run: npm run format:check
