@@ -110,6 +110,8 @@ npm run serve:dev
 
 - Xem phần [Additional APIs](https://github.com/Yuneko-dev/lnreader-plugins#additional-apis)
 
+- Để biết các API JS được phép sử dụng để tạo file `custom.js` cho plugin, có thể xem file `src/lib/reader-mock.ts`
+
 ### 2. Các hành vi mới của ứng dụng
 
 #### API dùng để buộc tải lại 1 chapter truyện (bỏ qua cache):
@@ -138,6 +140,12 @@ window.reader.post({ type: 'refetch' });
 
 ```html
 <meta id="no-prefetch-marker"/>
+```
+
+#### Làm thế nào để fetch bỏ qua giới hạn của WebView
+
+```js
+window.reader.fetch(url, init); // Sử dụng tương đương Fetch API
 ```
 
 ### 3. Captcha và các vấn đề bên lề
