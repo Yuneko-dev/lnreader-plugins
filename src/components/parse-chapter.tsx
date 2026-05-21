@@ -13,8 +13,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAppStore } from '@/store';
+import { readerMockScript } from '@/lib/reader-mock';
 
 export default function ParseChapterSection() {
+  const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
+
   const plugin = useAppStore(state => state.plugin);
   const parseChapterPath = useAppStore(state => state.parseChapterPath);
   const shouldAutoSubmitChapter = useAppStore(
@@ -293,7 +296,11 @@ export default function ParseChapterSection() {
                             a { color: #3b82f6; }
                           </style>
                           ${
+                            isElectron ? readerMockScript : ''
+                          }
+                          ${
                             plugin?.customCSS
+
                               ? `<link rel="stylesheet" href="/public/static/${plugin.customCSS}" onload="window.parent.postMessage({ type: 'asset-loaded', asset: 'css' }, '*')" onerror="window.parent.postMessage({ type: 'asset-error', asset: 'css' }, '*')">`
                               : ''
                           }

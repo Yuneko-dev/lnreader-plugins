@@ -4,7 +4,7 @@ import { customSession } from '../main';
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
-ipcMain.handle('fetch:request', async (_e, url: string, init?: any) => {
+export async function performNetRequest(url: string, init?: any) {
   const incomingHeaders = init?.headers || {};
 
   // Build merged headers from defaults + plugin-provided (Cookie handled separately)
@@ -63,11 +63,11 @@ ipcMain.handle('fetch:request', async (_e, url: string, init?: any) => {
     .join('; ');
 
   // net.request() instead of session.fetch() — the latter strips Cookie & User-Agent
-  const responseData = await new Promise<{
+  return new Promise<{
     statusCode: number;
     statusMessage: string;
     headers: Record<string, string>;
-    body: Buffer;
+    stream: Electron.IncomingMessage;
     finalUrl: string;
   }>((resolve, reject) => {
     const request = net.request({
@@ -107,36 +107,28 @@ ipcMain.handle('fetch:request', async (_e, url: string, init?: any) => {
     }, REQUEST_TIMEOUT_MS);
 
     request.on('response', response => {
-      const chunks: Buffer[] = [];
-      response.on('data', (chunk: Buffer) => chunks.push(chunk));
-      response.on('end', () => {
-        clearTimeout(timer);
+      clearTimeout(timer);
 
-        const flatHeaders: Record<string, string> = {};
-        for (const [k, v] of Object.entries(response.headers)) {
-          flatHeaders[k] = Array.isArray(v) ? v[v.length - 1] : v ?? '';
+      const flatHeaders: Record<string, string> = {};
+      for (const [k, v] of Object.entries(response.headers)) {
+        flatHeaders[k] = Array.isArray(v) ? v[v.length - 1] : v ?? '';
+      }
+
+      // Persist response Set-Cookie into the session jar
+      const setCookies = response.headers['set-cookie'];
+      if (setCookies) {
+        const arr = Array.isArray(setCookies) ? setCookies : [setCookies];
+        for (const raw of arr) {
+          customSession.cookies.set(parseSetCookie(raw, url)).catch(() => {});
         }
+      }
 
-        // Persist response Set-Cookie into the session jar
-        const setCookies = response.headers['set-cookie'];
-        if (setCookies) {
-          const arr = Array.isArray(setCookies) ? setCookies : [setCookies];
-          for (const raw of arr) {
-            customSession.cookies.set(parseSetCookie(raw, url)).catch(() => {});
-          }
-        }
-
-        resolve({
-          statusCode: response.statusCode,
-          statusMessage: response.statusMessage,
-          headers: flatHeaders,
-          body: Buffer.concat(chunks),
-          finalUrl: url,
-        });
-      });
-      response.on('error', err => {
-        clearTimeout(timer);
-        reject(err);
+      resolve({
+        statusCode: response.statusCode,
+        statusMessage: response.statusMessage,
+        headers: flatHeaders,
+        stream: response,
+        finalUrl: url,
       });
     });
 
@@ -155,12 +147,23 @@ ipcMain.handle('fetch:request', async (_e, url: string, init?: any) => {
     }
     request.end();
   });
+}
+
+ipcMain.handle('fetch:request', async (_e, url: string, init?: any) => {
+  const responseData = await performNetRequest(url, init);
+
+  const bodyBuffer = await new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    responseData.stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+    responseData.stream.on('end', () => resolve(Buffer.concat(chunks)));
+    responseData.stream.on('error', reject);
+  });
 
   return {
     status: responseData.statusCode,
     statusText: responseData.statusMessage,
     headers: responseData.headers,
-    body: responseData.body.toString('base64'),
+    body: bodyBuffer.toString('base64'),
     url: responseData.finalUrl,
   };
 });
