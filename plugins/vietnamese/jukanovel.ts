@@ -12,7 +12,7 @@ class JukaNovelPlugin implements Plugin.PluginBase {
   name = 'JukaNovel';
   icon = 'src/vi/jukanovel/icon.png';
   site = 'https://jukaza.site';
-  version = '1.0.5';
+  version = '1.0.6';
 
   pluginSettings: Plugin.PluginSettings = {
     preferRaw: {
@@ -102,15 +102,43 @@ class JukaNovelPlugin implements Plugin.PluginBase {
     };
   }
   async parseChapter(chapterPath: string): Promise<string> {
+    const chapterIdMatch = chapterPath.match(/\/(\d+)/);
+    if (!chapterIdMatch) {
+      throw new Error('Không thể tìm thấy ID chương.');
+    }
+    const chapterId = chapterIdMatch[1];
     const response = await fetchText(`${this.site}${chapterPath}`);
     const $ = loadCheerio(response);
     this.checkLogin($);
     const scriptContent = $('script:contains("__READER_DATA__")').html() || '';
-    const match = scriptContent.match(/window\.__READER_DATA__\s*=\s*(.*?});/);
-    if (!match) throw new Error('Không tìm thấy dữ liệu chương.');
+    const tokenMatch = scriptContent.match(
+      new RegExp(`"chapter_id":${chapterId},"token":"([^"]+)"`),
+    );
+    const token = tokenMatch ? tokenMatch[1] : null;
+
+    const cipherKeyMatch = scriptContent.match(/"cipherKey":"([^"]+)"/);
+    const cipherKey = cipherKeyMatch ? cipherKeyMatch[1] : '';
+
+    if (!token) throw new Error('Không tìm thấy token cho chương này.');
+
+    const getDataContent = await fetchText(
+      `${this.site}/api/reader/chapter/${chapterId}`,
+      {
+        headers: {
+          'accept': 'application/json',
+          'x-requested-with': 'XMLHttpRequest',
+          'referer': `${this.site}${chapterPath}`,
+          'x-reader-token': token,
+        },
+      },
+    );
 
     try {
-      const readerData = JSON.parse(match[1]);
+      const chapterData = JSON.parse(getDataContent);
+      const readerData = {
+        cipherKey: cipherKey,
+        chapter: chapterData,
+      };
       const chapterContent = this.decryptJukaNovel(readerData);
       if (!chapterContent) throw new Error('chapterContent = null');
       return chapterContent;
@@ -155,10 +183,11 @@ class JukaNovelPlugin implements Plugin.PluginBase {
     if (this.preferRaw) {
       content = contentCipher(chapter.raw_content);
     } else {
-      content =
-        contentCipher(chapter.published_content) ||
-        contentCipher(chapter.translated_content) ||
-        contentCipher(chapter.raw_content);
+      content = contentCipher(
+        chapter.published_content ||
+          chapter.translated_content ||
+          chapter.raw_content,
+      );
     }
 
     if (!content) return '';
