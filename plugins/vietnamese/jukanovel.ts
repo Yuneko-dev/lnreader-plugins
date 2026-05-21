@@ -111,7 +111,9 @@ class JukaNovelPlugin implements Plugin.PluginBase {
     const $ = loadCheerio(response);
     this.checkLogin($);
     const scriptContent = $('script:contains("__READER_DATA__")').html() || '';
-    const tokenMatch = scriptContent.match(new RegExp(`"chapter_id":${chapterId},"token":"([^"]+)"`));
+    const tokenMatch = scriptContent.match(
+      new RegExp(`"chapter_id":${chapterId},"token":"([^"]+)"`),
+    );
     const token = tokenMatch ? tokenMatch[1] : null;
 
     const cipherKeyMatch = scriptContent.match(/"cipherKey":"([^"]+)"/);
@@ -119,20 +121,23 @@ class JukaNovelPlugin implements Plugin.PluginBase {
 
     if (!token) throw new Error('Không tìm thấy token cho chương này.');
 
-    const getDataContent = await fetchText(`${this.site}/api/reader/chapter/${chapterId}`, {
-      headers: {
-        'accept': 'application/json',
-        'x-requested-with': 'XMLHttpRequest',
-        'referer': `${this.site}${chapterPath}`,
-        'x-reader-token': token
-      }
-    });
+    const getDataContent = await fetchText(
+      `${this.site}/api/reader/chapter/${chapterId}`,
+      {
+        headers: {
+          'accept': 'application/json',
+          'x-requested-with': 'XMLHttpRequest',
+          'referer': `${this.site}${chapterPath}`,
+          'x-reader-token': token,
+        },
+      },
+    );
 
     try {
       const chapterData = JSON.parse(getDataContent);
       const readerData = {
         cipherKey: cipherKey,
-        chapter: chapterData
+        chapter: chapterData,
       };
       const chapterContent = this.decryptJukaNovel(readerData);
       if (!chapterContent) throw new Error('chapterContent = null');
@@ -178,8 +183,11 @@ class JukaNovelPlugin implements Plugin.PluginBase {
     if (this.preferRaw) {
       content = contentCipher(chapter.raw_content);
     } else {
-      content =
-        contentCipher(chapter.published_content || chapter.translated_content || chapter.raw_content);
+      content = contentCipher(
+        chapter.published_content ||
+          chapter.translated_content ||
+          chapter.raw_content,
+      );
     }
 
     if (!content) return '';

@@ -7,7 +7,15 @@ import { registerLnproxyProtocol } from './protocols/lnproxy.js';
 app.commandLine.appendSwitch('disable-features', 'PartitionedCookies');
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'lnproxy', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }
+  {
+    scheme: 'lnproxy',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
+  },
 ]);
 
 const __filename = fileURLToPath(import.meta.url);
