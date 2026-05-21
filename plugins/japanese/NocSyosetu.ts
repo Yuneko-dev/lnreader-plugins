@@ -82,12 +82,16 @@ const pluginSettingTranslate: Plugin.SelectSetting = {
   value: 'en',
 };
 
+// Because the selector was debugged on a computer, it must use a Windows user agent.
+const UserAgent =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
+
 class NocSyosetu implements Plugin.PagePlugin {
   id = 'noc.syosetu';
   name = 'NocSyosetu';
   icon = 'src/jp/nocsyosetu/icon.png';
   site = 'https://noc.syosetu.com';
-  version = '1.1.17';
+  version = '1.1.18';
 
   pluginSettings: Plugin.PluginSettings = {
     nocsyosetu_translate: {
@@ -341,43 +345,58 @@ class NocSyosetu implements Plugin.PagePlugin {
     return novels;
   }
 
+  fetchTextWithUA(url: string) {
+    return fetchText(url, {
+      headers: {
+        'User-Agent': UserAgent,
+      },
+    });
+  }
+
   async popularNovels(
     pageNo: number,
     options: Plugin.PopularNovelsOptions<Filters>,
   ): Promise<Plugin.NovelItem[]> {
-    const { filters } = options;
-    let url = `${this.site}/search/search/search.php?order_former=search&p=${pageNo}&word=&order=new&ispickup=1`;
+    const { filters, showLatestNovels } = options;
 
-    if (
+    const urlObject = new URL(`${this.site}/search/search/search.php`);
+    const params = urlObject.searchParams;
+
+    params.set('order_former', 'search');
+    params.set('p', pageNo.toString());
+    params.set('word', '');
+
+    const isCustomFilter =
+      !showLatestNovels &&
       filters &&
-      (filters.order.value !== 'new' ||
-        filters.type.value ||
-        (Array.isArray(filters.scope.value) &&
-          filters.scope.value.length > 0) ||
-        (Array.isArray(filters.tags.value) && filters.tags.value.length > 0) ||
-        (Array.isArray(filters.tag.value) && filters.tag.value.length > 0))
-    ) {
-      url = `${this.site}/search/search/search.php?order_former=search&p=${pageNo}&word=`;
-      if (filters.order.value) {
-        url += `&order=${filters.order.value}`;
-      }
-      if (filters.type.value) {
-        url += `&type=${filters.type.value}`;
-      }
-      if (Array.isArray(filters.scope?.value)) {
-        filters.scope.value.forEach(s => (url += `&${s}=1`));
-      }
-      if (Array.isArray(filters.tags?.value)) {
-        filters.tags.value.forEach(t => (url += `&${t}=1`));
-      }
-      if (Array.isArray(filters.tag?.value)) {
-        filters.tag.value.forEach(t => (url += `&${t}=1`));
-      }
+      (filters.order?.value !== 'new' ||
+        filters.type?.value ||
+        (filters.scope?.value as any[])?.length ||
+        (filters.tags?.value as any[])?.length ||
+        (filters.tag?.value as any[])?.length);
+
+    if (isCustomFilter) {
+      if (filters.order?.value)
+        params.set('order', filters.order.value as string);
+      if (filters.type?.value) params.set('type', filters.type.value as string);
+
+      ['scope', 'tags', 'tag'].forEach(key => {
+        const arr = filters[key]?.value;
+        if (Array.isArray(arr)) {
+          arr.forEach(val => params.set(val as string, '1'));
+        }
+      });
+    } else {
+      params.set('order', 'new');
+      params.set('ispickup', '1');
+      params.set('type', '');
     }
+
+    const url = urlObject.toString();
 
     await this.checkR18Cookie(url);
 
-    const body = await fetchText(url);
+    const body = await this.fetchTextWithUA(url);
 
     const $ = loadCheerio(body);
 
@@ -401,6 +420,7 @@ class NocSyosetu implements Plugin.PagePlugin {
 
     return pageNovels;
   }
+
   parseChapters($page: any): Plugin.ChapterItem[] {
     const chapters: Plugin.ChapterItem[] = [];
 
@@ -442,7 +462,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   ): Promise<Plugin.SourceNovel & { totalPages: number }> {
     await this.checkR18Cookie(novelUrl);
 
-    const body = await fetchText(novelUrl);
+    const body = await this.fetchTextWithUA(novelUrl);
 
     this.checkCacheR18(body);
 
@@ -534,7 +554,7 @@ class NocSyosetu implements Plugin.PagePlugin {
 
     await this.checkR18Cookie(url.toString());
 
-    const body = await fetchText(url.toString());
+    const body = await this.fetchTextWithUA(url.toString());
     const $ = loadCheerio(body);
 
     return {
@@ -545,7 +565,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   async parseChapter(chapterPath: string): Promise<string> {
     await this.checkR18Cookie(chapterPath);
 
-    const body = await fetchText(chapterPath);
+    const body = await this.fetchTextWithUA(chapterPath);
 
     const cheerioQuery = loadCheerio(body);
     this.checkCacheR18(body);
@@ -573,14 +593,15 @@ class NocSyosetu implements Plugin.PagePlugin {
 
     const url = `${this.site}/search/search/search.php?order_former=search&word=${encodeURIComponent(
       finalSearchTerm,
-    )}${pageNo !== undefined
+    )}${
+      pageNo !== undefined
         ? `&p=${pageNo <= 1 || pageNo > 100 ? '1' : pageNo}` // check if pagenum is between 1 and 100
         : '' // if isn't don't set ?p
-      }`;
+    }`;
 
     await this.checkR18Cookie(url);
 
-    const body = await fetchText(url);
+    const body = await this.fetchTextWithUA(url);
 
     const cheerioQuery = loadCheerio(body);
 
