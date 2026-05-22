@@ -15,6 +15,9 @@ import {
 } from '@/components/ui/select';
 import useDebounce from '@/hooks/useDebounce';
 import { FetchMode } from '@/types/types';
+import { useAppStore } from '@/store';
+import { storage } from '@libs/storage';
+import { Switch } from '@/components/ui/switch';
 
 export default function SettingsSection() {
   const [cookies, setCookies] = useState('');
@@ -27,6 +30,27 @@ export default function SettingsSection() {
   const debouncedCookies = useDebounce(cookies, 500);
 
   const isElectron = !!window.electronAPI;
+  const plugin = useAppStore(state => state.plugin);
+  const [pluginSettingValues, setPluginSettingValues] = useState<
+    Record<string, any>
+  >({});
+
+  useEffect(() => {
+    if (isElectron && plugin?.pluginSettings) {
+      const vals: Record<string, any> = {};
+      Object.entries(plugin.pluginSettings).forEach(([key, setting]) => {
+        const stored = storage.get(key);
+        vals[key] = stored !== undefined ? stored : setting.value;
+      });
+      setPluginSettingValues(vals);
+    }
+  }, [plugin, isElectron]);
+
+  const handlePluginSettingChange = (key: string, value: any) => {
+    setPluginSettingValues(prev => ({ ...prev, [key]: value }));
+    storage.set(key, value);
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     const p = isElectron
@@ -108,6 +132,147 @@ export default function SettingsSection() {
         </div>
 
         <div className="space-y-6">
+          {/* Plugin Settings Section */}
+          {isElectron &&
+            plugin &&
+            plugin.pluginSettings &&
+            Object.keys(plugin.pluginSettings).length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-px flex-1 bg-border"></div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Plugin Settings
+                  </h3>
+                  <div className="h-px flex-1 bg-border"></div>
+                </div>
+
+                <div className="space-y-6">
+                  {Object.entries(plugin.pluginSettings).map(
+                    ([key, setting]) => {
+                      const val = pluginSettingValues[key];
+
+                      if (setting.type === 'Switch') {
+                        return (
+                          <div
+                            key={key}
+                            className="flex items-center justify-between"
+                          >
+                            <Label
+                              htmlFor={`plugin-setting-${key}`}
+                              className="font-semibold text-foreground"
+                            >
+                              {setting.label}
+                            </Label>
+                            <Switch
+                              id={`plugin-setting-${key}`}
+                              checked={val === true}
+                              onCheckedChange={checked =>
+                                handlePluginSettingChange(key, checked)
+                              }
+                            />
+                          </div>
+                        );
+                      }
+
+                      if (setting.type === 'Text' || !setting.type) {
+                        return (
+                          <div key={key} className="space-y-2">
+                            <Label
+                              htmlFor={`plugin-setting-${key}`}
+                              className="font-semibold text-foreground"
+                            >
+                              {setting.label}
+                            </Label>
+                            <Input
+                              id={`plugin-setting-${key}`}
+                              value={val || ''}
+                              onChange={e =>
+                                handlePluginSettingChange(key, e.target.value)
+                              }
+                            />
+                          </div>
+                        );
+                      }
+
+                      if (setting.type === 'Select') {
+                        return (
+                          <div key={key} className="space-y-2">
+                            <Label
+                              htmlFor={`plugin-setting-${key}`}
+                              className="font-semibold text-foreground"
+                            >
+                              {setting.label}
+                            </Label>
+                            <Select
+                              value={String(val)}
+                              onValueChange={v =>
+                                handlePluginSettingChange(key, v)
+                              }
+                            >
+                              <SelectTrigger id={`plugin-setting-${key}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {setting.options.map((opt: any) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      }
+
+                      if (setting.type === 'CheckboxGroup') {
+                        const selectedVals = Array.isArray(val) ? val : [];
+                        return (
+                          <div key={key} className="space-y-3">
+                            <Label className="font-semibold text-foreground">
+                              {setting.label}
+                            </Label>
+                            <div className="space-y-2">
+                              {setting.options.map((opt: any) => {
+                                const isChecked = selectedVals.includes(
+                                  opt.value,
+                                );
+                                return (
+                                  <div
+                                    key={opt.value}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Checkbox
+                                      id={`plugin-setting-${key}-${opt.value}`}
+                                      checked={isChecked}
+                                      onCheckedChange={checked => {
+                                        const newArr = checked
+                                          ? [...selectedVals, opt.value]
+                                          : selectedVals.filter(
+                                              (v: string) => v !== opt.value,
+                                            );
+                                        handlePluginSettingChange(key, newArr);
+                                      }}
+                                    />
+                                    <Label
+                                      htmlFor={`plugin-setting-${key}-${opt.value}`}
+                                      className="text-sm cursor-pointer"
+                                    >
+                                      {opt.label}
+                                    </Label>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    },
+                  )}
+                </div>
+              </div>
+            )}
           {/* Request Configuration Section */}
           <div>
             <div className="flex items-center gap-2 mb-4">
