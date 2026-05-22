@@ -513,7 +513,8 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
           .replace(/Trạng thái:?/i, '')
           .trim()
           .toLowerCase();
-        if (/full|hoàn|complete/.test(st)) novel.status = NovelStatus.Completed;
+        if (/full|hoàn|complete|trọn bộ/.test(st))
+          novel.status = NovelStatus.Completed;
         else if (/đang|tập/.test(st)) novel.status = NovelStatus.Ongoing;
         else novel.status = NovelStatus.Unknown;
       }
