@@ -91,7 +91,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   name = 'NocSyosetu';
   icon = 'src/jp/nocsyosetu/icon.png';
   site = 'https://noc.syosetu.com';
-  version = '1.1.18';
+  version = '1.1.19';
 
   pluginSettings: Plugin.PluginSettings = {
     nocsyosetu_translate: {

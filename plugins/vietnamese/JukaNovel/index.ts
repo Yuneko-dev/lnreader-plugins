@@ -12,7 +12,7 @@ class JukaNovelPlugin implements Plugin.PluginBase {
   name = 'JukaNovel';
   icon = 'src/vi/jukanovel/icon.png';
   site = 'https://jukaza.site';
-  version = '1.0.6';
+  version = '1.0.7';
 
   pluginSettings: Plugin.PluginSettings = {
     preferRaw: {

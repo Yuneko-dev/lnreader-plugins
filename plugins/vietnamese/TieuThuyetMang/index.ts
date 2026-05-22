@@ -22,7 +22,7 @@ class TieuThuyetMangPlugin implements Plugin.PluginBase {
   name = 'Tiểu Thuyết Mạng';
   icon = 'src/vi/tieuthuyetmang/icon.png';
   site = 'https://tieuthuyetmang.com';
-  version = '1.0.6';
+  version = '1.0.7';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {

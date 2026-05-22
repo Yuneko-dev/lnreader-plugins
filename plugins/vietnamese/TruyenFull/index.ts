@@ -9,7 +9,7 @@ class TruyenFull implements Plugin.PagePlugin {
   name = 'Truyện Full';
   icon = 'src/vi/truyenfull/icon.png';
   site = 'https://truyenfull.today';
-  version = '1.0.3';
+  version = '1.0.4';
 
   parseNovels(loadedCheerio: CheerioAPI) {
     const novels: Plugin.NovelItem[] = [];

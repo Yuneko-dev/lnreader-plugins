@@ -9,7 +9,7 @@ class WanwanSekaiPlugin implements Plugin.PluginBase {
   name = 'WanwanSekai';
   icon = 'src/vi/wanwansekai/icon.png';
   site = 'https://wanwansekai.com';
-  version = '1.0.2';
+  version = '1.0.3';
 
   private allNovels: Plugin.NovelItem[] = [];
 

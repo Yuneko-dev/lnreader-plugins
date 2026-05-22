@@ -109,7 +109,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.3';
+  version = '1.2.4';
 
   pluginSettings: Plugin.PluginSettings = {
     usingDocln: {

@@ -93,7 +93,7 @@ class NewtokiPlugin implements Plugin.PluginBase {
   name = 'Newtoki';
   icon = 'src/kr/newtoki/icon.png';
   site = 'https://sbxh1.com';
-  version = '1.0.2';
+  version = '1.0.3';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {

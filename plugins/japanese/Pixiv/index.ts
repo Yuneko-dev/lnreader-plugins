@@ -86,7 +86,7 @@ class PixivNovelPlugin implements Plugin.PagePlugin {
   name = 'Pixiv Novel';
   icon = 'src/jp/pixivnovel/icon.png';
   site = 'https://www.pixiv.net';
-  version = '1.0.11';
+  version = '1.0.12';
 
   pluginSettings: Plugin.PluginSettings = {
     pixiv_translate: {
