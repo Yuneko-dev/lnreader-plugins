@@ -106,6 +106,15 @@ for (let language in languages) {
 
   plugins.forEach(plugin => {
     if (plugin.startsWith('.')) return;
+
+    // Check if plugin is BROKEN
+    const brokenPath = path.join(
+      './plugins',
+      language.toLowerCase(),
+      plugin,
+      'BROKEN',
+    );
+
     minify(path.join(langPath, plugin));
     const rawCode = fs.readFileSync(
       `${COMPILED_PLUGIN_DIR}/${language.toLowerCase()}/${plugin}`,
@@ -210,16 +219,11 @@ if (!ONLY_NEW)
 for (let language in languages) {
   const langPath = path.join('./plugins', language.toLocaleLowerCase());
   if (!fs.existsSync(langPath)) continue;
-  fs.readdirSync(langPath)
-    .filter(f => f.endsWith('.broken.ts'))
-    .forEach(fn => {
-      console.error(
-        language.toLocaleLowerCase() +
-          '/' +
-          fn.replace('.broken.ts', '') +
-          ' ❌',
-      );
-    });
+  fs.readdirSync(langPath).forEach(fn => {
+    if (fs.existsSync(path.join(langPath, fn, 'BROKEN'))) {
+      console.error(language.toLocaleLowerCase() + '/' + fn + ' ❌');
+    }
+  });
 }
 
 console.log(jsonPath);

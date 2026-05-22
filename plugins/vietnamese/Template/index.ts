@@ -9,7 +9,7 @@ import { NovelStatus } from '@libs/novelStatus';
 import { storage, localStorage, sessionStorage } from '@libs/storage';
 import { utf8ToBytes, bytesToUtf8, Buffer } from '@libs/utils';
 
-// Thêm ".broken" vào tên file và tên folder để tránh ext này được build
+// Thêm file "BROKEN" vào folder để tránh ext này được build
 class TemplatePlugin implements Plugin.PluginBase {
   // Là một ID duy nhất để nhận diện Plugin
   id = 'template.id';
@@ -48,6 +48,17 @@ class TemplatePlugin implements Plugin.PluginBase {
   valueSettingHideLocked = storage.get('hideLocked'); // Trả về kiểu boolean
   valueSettingUrl = storage.get('url'); // Trả về kiểu string
   // localStorage và sessionStorage cũng có thể được sử dụng nếu cần, nhưng cần phải bật flag webStorageUtilized ở trên.
+
+  // File CSS tùy chỉnh cho giao diện đọc.
+  // Được lưu cùng thư mục với thư mục chứa icon.png
+  customCSS?: string | undefined = 'src/vi/template/custom.css';
+
+  // File JS tùy chỉnh cho giao diện đọc.
+  // Được lưu cùng thư mục với thư mục chứa icon.png
+  // Lưu ý: Bạn phải code các file js này trong thư mục webview.
+  // Entry point là index.js hoặc index.ts.
+  // Sau khi build thì bundle file sẽ được lưu vào đường dẫn customJS
+  customJS?: string | undefined = 'src/vi/template/custom.js';
 
   // Hàm này được gọi khi người dùng mở trang đầu của Plugin. Có thể apply các bộ lọc đã được định nghĩa.
   // Giống như việc bạn xem trang đầu tiên của Web vậy, và nó có chia trang.

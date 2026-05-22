@@ -1,6 +1,8 @@
 import fs from 'fs';
 import { execSync } from 'child_process';
 
+import path from 'path';
+
 let content = `import { Plugin } from '@/types/plugin';\n`;
 let pluginCounter = 0;
 const PLUGIN_DIR = 'plugins';
@@ -10,7 +12,11 @@ fs.readdirSync(PLUGIN_DIR)
   .forEach(langName => {
     const LANG_DIR = PLUGIN_DIR + '/' + langName;
     fs.readdirSync(LANG_DIR)
-      .filter(f => !f.includes('broken') && !f.startsWith('.'))
+      .filter(f => {
+        if (f.startsWith('.')) return false;
+        if (fs.existsSync(path.join(LANG_DIR, f, 'BROKEN'))) return false;
+        return true;
+      })
       .forEach(pluginName => {
         content += `import p_${pluginCounter} from '@plugins/${langName}/${pluginName.replace(/\.ts$/, '')}';\n`;
         pluginCounter += 1;
