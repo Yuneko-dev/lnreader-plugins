@@ -15,6 +15,7 @@ export const solveCloudflare = async (
  * @param url URL (used as origin)
  * @param sitekey The sitekey of the CAPTCHA widget
  * @returns {Promise<string>} The CAPTCHA token
+ * @deprecated Test only
  */
 export const solveCloudflareTurnstile = async (
   url: string,
