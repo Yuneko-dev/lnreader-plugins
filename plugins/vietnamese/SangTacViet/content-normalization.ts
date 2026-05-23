@@ -1,3 +1,5 @@
+/* eslint-disable no-useless-escape */
+
 import { decodeHtmlEntities, encodeHtmlEntities } from '@libs/utils';
 import { decodeGlyphs } from './glyph-decode';
 
