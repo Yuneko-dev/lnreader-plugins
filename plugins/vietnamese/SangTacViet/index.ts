@@ -355,7 +355,10 @@ class STVChapterError extends Error {
     Object.setPrototypeOf(this, STVChapterError.prototype);
   }
   get shouldStopRetry(): boolean {
-    switch (this.errorCode) {
+    return STVChapterError.checkStopCode(this.errorCode);
+  }
+  static checkStopCode(code: number) {
+    switch (code) {
       case 0: // OK
       case 1: // empty
       case 12:
@@ -415,7 +418,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.20';
+  version = '1.0.22';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
