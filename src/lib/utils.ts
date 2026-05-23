@@ -48,15 +48,3 @@ export const NodeCrypto = crypto;
  */
 export const getUserAgent = () =>
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
-
-/**
- * Bypass Cloudflare
- * @param url URL
- * @param type `interstitial` (Interstitial Challenge Pages) | `turnstile` (Cloudflare's smart CAPTCHA alternative)
- * @returns {Promise<boolean>} isOk
- * @deprecated Test only
- */
-export const solveCloudflare = async (
-  url: string,
-  type: 'interstitial' | 'turnstile',
-): Promise<boolean> => false;

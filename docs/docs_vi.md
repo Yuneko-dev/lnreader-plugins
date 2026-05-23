@@ -165,7 +165,7 @@ window.reader.fetch(url, init); // Sử dụng tương đương Fetch API
 - Trong Reader, URL (location) mặc định sử dụng sẽ là URL site của plugin (Không phải URL của Chapter). Trong Playground, nó là localhost URL.
 
 > [!WARNING]
-> API mới: `solveCloudflare` (import từ `@libs/utils`) là một API gọi WebView ẩn để bypass các yêu cầu bị Cloudflare chặn. Nhưng đây không phải một API ổn định, nó có thể bị xóa bất kì lúc nào. Luôn kiểm tra kiểu của `solveCloudflare` có phải một function hay không trước khi sử dụng.
+> API mới: `solveCloudflare` (import từ `@libs/webview`) là một API gọi WebView ẩn để bypass các yêu cầu bị Cloudflare chặn. Nhưng đây không phải một API ổn định, nó có thể bị xóa bất kì lúc nào. Luôn kiểm tra kiểu của `solveCloudflare` có phải một function hay không trước khi sử dụng.
 
 ```js
 import { solveCloudflare } from '@/lib/utils';
