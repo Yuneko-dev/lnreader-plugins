@@ -53,7 +53,7 @@ function tryTurnstile(placeholder) {
 
     script.onload = function () {
       try {
-        turnstile.render('#turnstile-box', {
+        window.turnstile?.render('#turnstile-box', {
           sitekey: TURNSTILE_SITEKEY,
           callback: function (token) {
             clearTimeout(turnstileTimeout);
