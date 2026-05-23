@@ -44,6 +44,10 @@ merged.resolve.alias = [
     replacement: path.resolve(__dirname, 'lib/cookie.ts'),
   },
   {
+    find: '@libs/webview',
+    replacement: path.resolve(__dirname, 'lib/webview.ts'),
+  },
+  {
     find: '@libs/storage',
     replacement: path.resolve(__dirname, 'lib/storage.ts'),
   },
