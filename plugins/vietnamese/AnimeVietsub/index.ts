@@ -13,20 +13,33 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   name = 'AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
   site = 'https://animevietsub.site';
-  version = '1.0.18';
+  version = '1.0.19';
   filters = filters;
   customJS = 'src/vi/animevietsub/player.js';
 
   pluginSettings: Plugin.PluginSettings = {
-    enableEmbed: {
+    playMode: {
+      value: 'm3u8',
+      label: 'Chế độ phát',
+      type: 'Select',
+      options: [
+        { label: 'm3u8 (giải mã)', value: 'm3u8' },
+        { label: 'Embed (iframe)', value: 'embed' },
+      ],
+    },
+    enableDebug: {
       value: false,
-      label: 'Bật embed',
+      label: 'Bật debug',
       type: 'Switch',
     },
   };
 
-  get enableEmbed() {
-    return storage.get('enableEmbed') as boolean;
+  get playMode(): string {
+    return (storage.get('playMode') as string) || 'm3u8';
+  }
+
+  get enableDebug(): boolean {
+    return storage.get('enableDebug') as boolean;
   }
 
   imageRequestInit: Plugin.ImageRequestInit = {
@@ -296,6 +309,9 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
           typeof pd.link === 'string' &&
           pd.link.includes('googleapiscdn.com')
         ) {
+          if (this.playMode === 'embed') {
+            return this.buildPlayerHtml({ iframe: pd.link, embedOnly: true });
+          }
           return this.buildPlayerHtml({ iframe: pd.link });
         }
 
@@ -304,25 +320,12 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
           (pd.playTech === 'api' || pd.playTech === 'all') &&
           Array.isArray(pd.link)
         ) {
-          // If embed disabled: only pick m3u8 sources
-          if (!this.enableEmbed) {
-            const hlsSource = pd.link.find(
-              (s: any) =>
-                s.type === 'hls' || /\.m3u8(\?|$)/i.test(s.file || ''),
-            );
-            if (hlsSource) {
-              return this.buildPlayerHtml({
-                m3u8: (hlsSource.file || '').replace(/^&http/, 'http'),
-              });
-            }
-          } else {
-            const sources = pd.link.map((s: any) => ({
-              file: (s.file || '').replace(/^&http/, 'http'),
-              type: s.type || '',
-              label: s.label || '',
-            }));
-            return this.buildPlayerHtml({ sources });
-          }
+          const sources = pd.link.map((s: any) => ({
+            file: (s.file || '').replace(/^&http/, 'http'),
+            type: s.type || '',
+            label: s.label || '',
+          }));
+          return this.buildPlayerHtml({ sources });
         }
 
         // Case C: api / all with single string link
@@ -334,20 +337,19 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
           if (/\.m3u8(\?|$)/i.test(link)) {
             return this.buildPlayerHtml({ m3u8: link, referer: url });
           }
-          if (this.enableEmbed && /\.(mp4|webm)(\?|$)/i.test(link)) {
+          if (/\.(mp4|webm)(\?|$)/i.test(link)) {
             return this.buildPlayerHtml({
               sources: [{ file: link, type: 'mp4', label: '' }],
             });
           }
         }
 
-        // Case D: iframe to non-googleapiscdn player (only when embed allowed)
+        // Case D: iframe to non-googleapiscdn player
         if (
-          this.enableEmbed &&
           pd.playTech === 'iframe' &&
           typeof pd.link === 'string'
         ) {
-          return this.buildPlayerHtml({ iframe: pd.link });
+          return this.buildPlayerHtml({ iframe: pd.link, embedOnly: true });
         }
       } catch (_) {
         //
@@ -387,8 +389,8 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     }
 
     // ── 3. Last resort: embed the episode page in an iframe ──
-    if (this.enableEmbed) {
-      return this.buildPlayerHtml({ iframe: url });
+    if (this.playMode === 'embed') {
+      return this.buildPlayerHtml({ iframe: url, embedOnly: true });
     }
     return '<p style="color:#ff4444;font-size:14px;font-family:sans-serif;text-align:center;padding:16px;">Không tìm thấy nguồn video cho tập phim này.</p><meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>';
   }
@@ -402,6 +404,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     id?: string;
     referer?: string;
     site?: string;
+    embedOnly?: boolean;
   }): string {
     const esc = (s: string) => encodeHtmlEntities(s);
 
@@ -414,9 +417,8 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     if (opts.id) attrs.push(`data-id="${esc(opts.id)}"`);
     if (opts.referer) attrs.push(`data-referer="${esc(opts.referer)}"`);
     if (opts.site) attrs.push(`data-site="${esc(opts.site)}"`);
-    attrs.push(`data-embed-enabled="${this.enableEmbed ? '1' : '0'}"`);
-
-    const mode = opts.m3u8 ? 'Đang ở chế độ m3u8' : 'Đang tải video…';
+    attrs.push(`data-mode="${opts.embedOnly ? 'embed' : this.playMode}"`);
+    if (this.enableDebug) attrs.push('data-debug="1"');
 
     return [
       `<div ${attrs.join(' ')}`,
@@ -425,7 +427,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
       '    <p style="color:#fff;font-family:sans-serif;">Đang tải video...</p>',
       '  </div>',
       '</div>',
-      `<p id="avs-mode-label" style="color:#888;font-size:12px;font-family:sans-serif;text-align:center;margin:4px 0;">${mode}</p>`,
+      '<p id="avs-mode-label" style="color:#888;font-size:12px;font-family:sans-serif;text-align:center;margin:4px 0;"></p>',
       '<meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>',
     ].join('\n');
   }

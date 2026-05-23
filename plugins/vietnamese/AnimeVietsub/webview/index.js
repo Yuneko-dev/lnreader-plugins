@@ -20,7 +20,8 @@
   var inner = document.getElementById('avs-player-inner');
   if (!inner) return;
 
-  var embedEnabled = container.getAttribute('data-embed-enabled') === '1';
+  var mode = container.getAttribute('data-mode') || 'm3u8'; // 'm3u8' or 'embed'
+  var debugEnabled = container.getAttribute('data-debug') === '1';
   var modeLabel = document.getElementById('avs-mode-label');
   var _debugLog = [];
 
@@ -64,18 +65,12 @@
   // ─── Priority 3: iframe embed ────────────────────────────────────
   var iframeSrc = container.getAttribute('data-iframe');
   if (iframeSrc) {
-    if (iframeSrc.indexOf('googleapiscdn.com') !== -1) {
-      console.log('[AVS] googleapiscdn detected, trying token extraction…');
+    if (iframeSrc.indexOf('googleapiscdn.com') !== -1 && mode === 'm3u8') {
+      console.log('[AVS] googleapiscdn + m3u8 mode, decrypting…');
       tryGoogleApisCdn(iframeSrc, inner);
       return;
     }
-    if (!embedEnabled) {
-      showError(
-        'Nguồn này chỉ hỗ trợ embed. Bật "Bật embed" trong cài đặt plugin.',
-      );
-      if (modeLabel) modeLabel.textContent = '';
-      return;
-    }
+    // Embed mode or non-googleapiscdn iframe
     console.log('[AVS] Embedding iframe:', iframeSrc.substring(0, 80));
     inner.innerHTML =
       '<iframe src="' +
@@ -147,18 +142,8 @@
   function handlePlayerResponse(json) {
     // iframe player
     if (json.playTech === 'iframe' && typeof json.link === 'string') {
-      if (json.link.indexOf('googleapiscdn.com') !== -1) {
-        console.log(
-          '[AVS] AJAX returned googleapiscdn, trying token extraction…',
-        );
+      if (json.link.indexOf('googleapiscdn.com') !== -1 && mode === 'm3u8') {
         tryGoogleApisCdn(json.link, inner);
-        return;
-      }
-      if (!embedEnabled) {
-        showError(
-          'Nguồn này chỉ hỗ trợ embed. Bật "Bật embed" trong cài đặt plugin.',
-        );
-        if (modeLabel) modeLabel.textContent = '';
         return;
       }
       inner.innerHTML =
@@ -183,18 +168,13 @@
         buildVideoPlayer(inner, [{ file: link, type: 'hls' }]);
       } else if (/\.(mp4|webm)(\?|$)/i.test(link)) {
         buildVideoPlayer(inner, [{ file: link }]);
-      } else if (embedEnabled) {
+      } else {
         inner.innerHTML =
           '<iframe src="' +
           escapeAttr(link) +
           '" style="width:100%;height:100%;border:none;" ' +
           'allowfullscreen allow="autoplay; fullscreen; encrypted-media"></iframe>';
         if (modeLabel) modeLabel.textContent = 'Đang ở chế độ embed';
-      } else {
-        showError(
-          'Nguồn này chỉ hỗ trợ embed. Bật "Bật embed" trong cài đặt plugin.',
-        );
-        if (modeLabel) modeLabel.textContent = '';
       }
       return;
     }
@@ -203,11 +183,8 @@
   }
 
   // ─── googleapiscdn: two-layer m3u8 decryption ─────────────────
-  //
   // Layer 1: AES-GCM decrypt concatenated _t params → intermediate m3u8
   // Layer 2: AES-CTR decrypt segment URLs → real CDN URLs
-  //
-  // If any phase fails, fall back to iframe embed.
   function tryGoogleApisCdn(playerUrl, target) {
     // Create hidden iframe to solve Cloudflare challenge
     var iframe = document.createElement('iframe');
@@ -216,8 +193,7 @@
     iframe.src = playerUrl;
     (document.body || document.documentElement).appendChild(iframe);
 
-    // Wait for Cloudflare, then try fetch
-    var cfWait = 1000; // 1s for CF challenge
+    var cfWait = 1000;
     debugLog('Đợi CF ' + cfWait + 'ms…');
     setTimeout(function () {
       debugLog('CF done, fetching page…');
@@ -231,10 +207,12 @@
     // so Cloudflare cf_clearance cookie is included automatically
     nativeFetch(playerUrl, { Referer: playerUrl })
       .then(function (res) {
-        if (res.status !== 200)
+        if (res.status !== 200) {
+          debugLog('Body: ' + (res.text || '').substring(0, 100));
           throw new Error(
             'HTTP ' + res.status + ' (len=' + (res.text || '').length + ')',
           );
+        }
         var html = res.text;
         debugLog('Page OK, size=' + html.length);
         cleanupIframe(iframe);
@@ -251,7 +229,7 @@
         // Extract video hash from URL
         var hashMatch = playerUrl.match(/\/player\/([0-9a-f]+)/);
         if (!hashMatch) {
-          fallbackToEmbed(playerUrl, target);
+          showError('Không tìm thấy video hash trong URL.');
           return;
         }
         var videoHash = hashMatch[1];
@@ -302,10 +280,15 @@
     return (Math.imul(state, 1664525) + 1013904223) >>> 0;
   }
 
+  function deriveSeed(sk) {
+    // Site uses parseInt(sk.substring(0,8), 16) directly — parses valid hex prefix
+    return (parseInt(sk.substring(0, 8), 16) || 0) >>> 0;
+  }
+
   function stringUnshuffle(str, seed) {
     var chars = str.split('');
     var len = chars.length;
-    var state = parseInt(seed.substring(0, 8), 16) >>> 0;
+    var state = deriveSeed(seed);
     var swaps = [];
     for (var i = len - 1; i > 0; i--) {
       state = lcgNext(state);
@@ -377,7 +360,7 @@
       payload = JSON.parse(atob(jwtParts[1]));
     } catch (e) {
       debugLog('JWT parse failed');
-      fallbackToEmbed(playerUrl, target);
+      showError('Không thể phân tích token.');
       return;
     }
     var jti = payload.jti;
@@ -389,42 +372,61 @@
       if (k % 2 === 1) jtiOdd += jti[k];
     }
 
-    // Read session params from m3u8 response headers
-    var cn = m3u8Headers['x-edge-tag'] || '';
-    var sk = m3u8Headers['x-cache-node'] || '';
-    var ts = m3u8Headers['x-request-trace'] || '0';
-    var uid = '';
-    try {
-      uid = decodeURIComponent(m3u8Headers['x-proxy-digest'] || 'anon');
-    } catch (e) {
-      uid = 'anon';
+    // Parse USDK binary envelope (X-Envelope header)
+    function parseEnvelope(envB64) {
+      var bytes = b64urlDecode(envB64);
+      if (bytes.length < 11) return null;
+      // Magic: USDK
+      if (bytes[0] !== 85 || bytes[1] !== 83 || bytes[2] !== 68 || bytes[3] !== 75) return null;
+      // Version must be 1
+      if (bytes[4] !== 1) return null;
+      var payloadLen = (bytes[5] << 8) | bytes[6];
+      if (bytes.length < 7 + payloadLen + 4) return null;
+      var payload = bytes.subarray(7, 7 + payloadLen);
+      var str = '';
+      for (var i = 0; i < payload.length; i++) str += String.fromCharCode(payload[i]);
+      str = decodeURIComponent(escape(str));
+      return JSON.parse(str);
     }
-    debugLog(
-      'cn=' + cn.substring(0, 16) + ' sk=' + sk.substring(0, 16) + ' ts=' + ts,
-    );
 
-    if (!cn || !sk) {
-      // Try envelope header (base64url-encoded JSON with cn, sk, ts, uid)
-      var envHeader =
-        m3u8Headers['x-avs-envelope'] || m3u8Headers['x-stream-envelope'] || '';
-      if (envHeader) {
-        try {
-          var envJson = JSON.parse(
-            new TextDecoder().decode(b64urlDecode(envHeader)),
-          );
-          cn = envJson.cn || cn;
-          sk = envJson.sk || sk;
-          ts = envJson.ts || ts;
-          uid = envJson.uid || uid;
-        } catch (e) {
-          /* envelope parse failed */
+    var cn = '', sk = '', ts = '0', uid = 'anon';
+
+    // Priority 1: envelope (binary USDK format)
+    var envHeader =
+      m3u8Headers['x-envelope'] || m3u8Headers['x-avs-envelope'] ||
+      m3u8Headers['x-stream-envelope'] || '';
+    if (envHeader) {
+      try {
+        var envJson = parseEnvelope(envHeader);
+        if (envJson) {
+          debugLog('envelope=' + JSON.stringify(envJson).substring(0, 200));
+          cn = envJson.cn || '';
+          sk = envJson.sk || '';
+          ts = envJson.ts || '0';
+          uid = envJson.uid || 'anon';
         }
+      } catch (e) {
+        debugLog('envelope parse fail: ' + (e.message || e));
       }
     }
 
+    // Priority 2: individual headers (fallback)
+    if (!cn) cn = m3u8Headers['x-edge-tag'] || '';
+    if (!sk) sk = m3u8Headers['x-cache-node'] || '';
+    if (!ts || ts === '0') ts = m3u8Headers['x-request-trace'] || '0';
+    if (uid === 'anon') {
+      try {
+        var pd = m3u8Headers['x-proxy-digest'];
+        if (pd) uid = decodeURIComponent(pd);
+      } catch (e) {}
+    }
+
+    debugLog('cn=' + cn + ' sk=' + sk);
+    debugLog('ts=' + ts + ' uid=' + uid);
+
     if (!cn || !sk) {
       debugLog('No cn/sk → cannot decrypt');
-      fallbackToEmbed(playerUrl, target);
+      showError('Thiếu thông tin giải mã (cn/sk).');
       return;
     }
 
@@ -452,86 +454,123 @@
 
     if (tValues.length === 0) {
       debugLog('No _t params in m3u8');
-      fallbackToEmbed(playerUrl, target);
+      showError('Không tìm thấy dữ liệu mã hóa trong m3u8.');
       return;
     }
 
-    // Concatenate and unshuffle
+    // Concatenate _t values
     var concatenated = tValues.join('');
-    var unshuffled = stringUnshuffle(concatenated, sk);
 
-    // Base64url decode to get the encrypted blob
-    var encryptedBlob;
-    try {
-      encryptedBlob = b64urlDecode(unshuffled);
-    } catch (e) {
-      debugLog('b64 decode failed: ' + e.message);
-      fallbackToEmbed(playerUrl, target);
-      return;
-    }
-
-    debugLog('Blob: ' + encryptedBlob.length + ' bytes');
-
-    // Derive AES-GCM key: HMAC-SHA256(key=b64decode(cn), data="uid:ts:sk:0")
+    // Derive AES-GCM key material
     var cnBytes = b64urlDecode(cn);
-    var hmacDataStr = uid + ':' + ts + ':' + sk + ':0';
-    var hmacData = new TextEncoder().encode(hmacDataStr);
     var iv = cnBytes.slice(0, 12);
 
-    crypto.subtle
-      .importKey('raw', cnBytes, { name: 'HMAC', hash: 'SHA-256' }, false, [
-        'sign',
-      ])
-      .then(function (hmacKey) {
-        return crypto.subtle.sign('HMAC', hmacKey, hmacData);
-      })
-      .then(function (gcmKeyBuf) {
-        return crypto.subtle.importKey(
-          'raw',
-          gcmKeyBuf,
-          { name: 'AES-GCM' },
-          false,
-          ['decrypt'],
-        );
-      })
-      .then(function (gcmKey) {
-        debugLog('AES-GCM decrypt ' + encryptedBlob.length + 'B…');
-        return crypto.subtle.decrypt(
-          { name: 'AES-GCM', iv: iv },
-          gcmKey,
-          encryptedBlob,
-        );
-      })
-      .then(function (rawResult) {
-        // Apply descrambler (crypto harden is active)
-        var descrambled = descramble(rawResult, sk, ts);
-        var intermediateM3u8 = new TextDecoder().decode(descrambled);
-        debugLog(
-          'Intermediate: ' +
-            intermediateM3u8.length +
-            'ch, first80=' +
-            intermediateM3u8.substring(0, 80),
-        );
+    // Unshuffle + HMAC combos (matched to avs-loader v1.12.18)
+    // Primary: unshuffle with LCG(parseInt(sk,16)), HMAC = uid:ts:sk:0
+    var unshuffleMethods = [
+      { name: 'lcg', fn: function(s) { return stringUnshuffle(s, sk); } },
+      { name: 'noShuffle', fn: function(s) { return s; } },
+    ];
+    var hmacFormats = [
+      { name: 'harden', data: uid + ':' + ts + ':' + sk + ':0' },
+      { name: 'plain', data: uid + ':' + ts + ':' + sk },
+    ];
 
-        if (intermediateM3u8.length < 10) {
-          debugLog('Intermediate too short');
-          fallbackToEmbed(playerUrl, target);
-          return;
-        }
+    // Build all combinations to try
+    var attempts = [];
+    for (var ui = 0; ui < unshuffleMethods.length; ui++) {
+      for (var hi = 0; hi < hmacFormats.length; hi++) {
+        attempts.push({ unshuffle: unshuffleMethods[ui], hmac: hmacFormats[hi] });
+      }
+    }
 
-        // ── Layer 2: AES-CTR decrypt segment URLs ──
-        decryptSegmentUrls(
-          intermediateM3u8,
-          headerLines,
-          jtiOdd,
-          playerUrl,
-          target,
-        );
-      })
-      .catch(function (err) {
-        debugLog('Layer 1 (GCM) failed: ' + ((err && err.message) || err));
-        fallbackToEmbed(playerUrl, target);
-      });
+    function tryAttempt(idx) {
+      if (idx >= attempts.length) {
+        debugLog('All ' + attempts.length + ' attempts failed');
+        showError('Giải mã thất bại sau ' + attempts.length + ' lần thử.');
+        return;
+      }
+      var attempt = attempts[idx];
+      var unshuffled = attempt.unshuffle.fn(concatenated);
+      var encryptedBlob;
+      try {
+        encryptedBlob = b64urlDecode(unshuffled);
+      } catch (e) {
+        tryAttempt(idx + 1);
+        return;
+      }
+
+      var hmacData = new TextEncoder().encode(attempt.hmac.data);
+
+      crypto.subtle
+        .importKey('raw', cnBytes, { name: 'HMAC', hash: 'SHA-256' }, false, [
+          'sign',
+        ])
+        .then(function (hmacKey) {
+          return crypto.subtle.sign('HMAC', hmacKey, hmacData);
+        })
+        .then(function (gcmKeyBuf) {
+          return crypto.subtle.importKey(
+            'raw',
+            gcmKeyBuf,
+            { name: 'AES-GCM' },
+            false,
+            ['decrypt'],
+          );
+        })
+        .then(function (gcmKey) {
+          return crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv },
+            gcmKey,
+            encryptedBlob,
+          );
+        })
+        .then(function (rawResult) {
+          var rawBytes = new Uint8Array(rawResult);
+
+          // Apply descrambler (permutation + XOR) — site's hardened decrypt does this
+          var descrambled = descramble(rawBytes, sk, ts);
+          var m3u8Body = new TextDecoder().decode(descrambled);
+
+          // Prepend header lines from original m3u8 (they aren't encrypted)
+          var m3u8Text = headerLines.join('\n') + '\n' + m3u8Body;
+          if (m3u8Text.indexOf('#EXT-X-ENDLIST') === -1) m3u8Text += '\n#EXT-X-ENDLIST';
+          debugLog('Full m3u8: ' + m3u8Text.length + 'ch');
+
+          // Check if segment URLs need Layer 2 AES-CTR decryption
+          var hasEncryptedUrls = /\/hls\/[0-9a-f]{24}\.ts\?e=/.test(m3u8Text);
+
+          if (hasEncryptedUrls) {
+            debugLog('Layer 2: decrypting ' + m3u8Text.split('\n').length + ' lines');
+            decryptSegmentUrls(
+              m3u8Text,
+              headerLines,
+              jtiOdd,
+              playerUrl,
+              target,
+            );
+            return;
+          }
+
+          if (m3u8Text.indexOf('#EXTINF') !== -1) {
+            debugLog('Decryption OK! Building blob m3u8 player');
+            var blob = new Blob([m3u8Text], { type: 'application/vnd.apple.mpegurl' });
+            var blobUrl = URL.createObjectURL(blob);
+            if (modeLabel) modeLabel.textContent = 'Đang ở chế độ m3u8';
+            buildVideoPlayer(target, [{ file: blobUrl, type: 'hls' }]);
+            return;
+          }
+
+          debugLog('Decrypted content not valid m3u8');
+          showError('Nội dung giải mã không phải m3u8 hợp lệ.');
+        })
+        .catch(function () {
+          // This attempt failed, try next
+          tryAttempt(idx + 1);
+        });
+    }
+
+    tryAttempt(0);
   }
 
   function decryptSegmentUrls(
@@ -578,7 +617,7 @@
     if (segments.length === 0) {
       // Intermediate m3u8 might already have direct URLs (no /hls/ pattern)
       debugLog('No /hls/ segments in intermediate m3u8');
-      fallbackToEmbed(playerUrl, target);
+      showError('Không tìm thấy segment trong m3u8 trung gian.');
       return;
     }
 
@@ -651,14 +690,12 @@
 
         debugLog('Decrypted ' + validCount + '/' + results.length + ' URLs');
         if (validCount === 0) {
-          fallbackToEmbed(playerUrl, target);
+          showError('Không giải mã được URL segment nào.');
           return;
         }
 
-        // Build clean m3u8: header lines + decrypted segment lines
+        // Build clean m3u8 from outLines (already includes headers)
         var cleanLines = [];
-        for (var i = 0; i < headerLines.length; i++)
-          cleanLines.push(headerLines[i]);
         for (var i = 0; i < outLines.length; i++) {
           var l = outLines[i];
           if (!l) continue;
@@ -683,26 +720,8 @@
       })
       .catch(function (err) {
         debugLog('Layer 2 (CTR) failed: ' + ((err && err.message) || err));
-        fallbackToEmbed(playerUrl, target);
+        showError('Giải mã Layer 2 thất bại.');
       });
-  }
-
-  function fallbackToEmbed(playerUrl, target) {
-    if (!embedEnabled) {
-      console.log('[AVS] Embed disabled, showing error');
-      showError(
-        'Không thể giải mã video. Bật "Bật embed" trong cài đặt plugin để xem qua iframe.',
-      );
-      if (modeLabel) modeLabel.textContent = '';
-      return;
-    }
-    console.log('[AVS] Falling back to iframe embed');
-    target.innerHTML =
-      '<iframe src="' +
-      escapeAttr(playerUrl) +
-      '" style="width:100%;height:100%;border:none;" ' +
-      'allowfullscreen allow="autoplay; fullscreen; encrypted-media"></iframe>';
-    if (modeLabel) modeLabel.textContent = 'Đang ở chế độ embed';
   }
 
   function cleanupIframe(iframe) {
@@ -720,13 +739,15 @@
   function debugLog(msg) {
     _debugLog.push(msg);
     console.log('[AVS] ' + msg);
+    if (!debugEnabled) return;
     var el = document.getElementById('avs-debug-log');
-    if (!el && inner) {
-      inner.innerHTML =
-        '<div id="avs-debug-log" style="color:#aaa;font-family:monospace;font-size:11px;padding:8px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;"></div>';
-      el = document.getElementById('avs-debug-log');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'avs-debug-log';
+      el.style.cssText = 'color:#aaa;font-family:monospace;font-size:11px;padding:8px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;';
+      container.appendChild(el);
     }
-    if (el) el.textContent = _debugLog.join('\n');
+    el.textContent = _debugLog.join('\n');
   }
   function showError(msg) {
     debugLog('ERROR: ' + msg);
@@ -836,62 +857,61 @@
     if (hlsSources.length > 0) {
       loadHlsJs(function () {
         if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-          // Custom fragment loader: strips 127-byte PNG prefix from each segment
-          // (AnimeVietsub disguises TS segments with a PNG header)
-          var AvsFragLoader = function (config) {
-            var inner = new Hls.DefaultConfig.loader(config);
-            Object.defineProperties(this, {
-              stats: {
-                get: function () {
-                  return inner.stats;
-                },
-              },
-              context: {
-                get: function () {
-                  return inner.context;
-                },
-              },
-            });
-            this.abort = function () {
-              inner.abort();
+          // Custom fragment loader: uses reader.fetch proxy to bypass CORS
+          // and strips 127-byte PNG prefix from each segment
+          var ProxyFragLoader = function (config) {
+            this._config = config;
+            this.stats = {
+              aborted: false, loaded: 0, retry: 0, total: 0, chunkCount: 0,
+              bwEstimate: 0,
+              loading: { start: 0, first: 0, end: 0 },
+              parsing: { start: 0, end: 0 },
+              buffering: { start: 0, first: 0, end: 0 },
             };
-            this.destroy = function () {
-              inner.destroy();
-            };
-            this.load = function (ctx, cfg, cbs) {
-              var origSuccess = cbs.onSuccess;
-              var modCbs = Object.assign({}, cbs, {
-                onSuccess: function (resp, stats, ctx2, net) {
-                  if (resp.data && resp.data.byteLength > 127) {
-                    var header = new Uint8Array(resp.data, 0, 8);
-                    // PNG signature: 89 50 4E 47 0D 0A 1A 0A
-                    var isPng =
-                      header[0] === 0x89 &&
-                      header[1] === 0x50 &&
-                      header[2] === 0x4e &&
-                      header[3] === 0x47 &&
-                      header[4] === 0x0d &&
-                      header[5] === 0x0a &&
-                      header[6] === 0x1a &&
-                      header[7] === 0x0a;
-                    if (isPng) {
-                      resp.data = resp.data.slice(127);
-                    }
+            this.context = null;
+            this._controller = null;
+          };
+          ProxyFragLoader.prototype.destroy = function () { this.abort(); };
+          ProxyFragLoader.prototype.abort = function () {
+            if (this._controller) { this._controller.abort(); this._controller = null; }
+          };
+          ProxyFragLoader.prototype.load = function (ctx, cfg, cbs) {
+            this.context = ctx;
+            var self = this;
+            self.stats.loading.start = performance.now();
+            fetch(ctx.url)
+              .then(function (resp) {
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                self.stats.loading.first = performance.now();
+                return resp.arrayBuffer();
+              })
+              .then(function (buf) {
+                self.stats.loading.end = performance.now();
+                self.stats.loaded = buf.byteLength;
+                self.stats.total = buf.byteLength;
+                // Strip 127-byte PNG prefix (segments disguised as PNG)
+                var data = buf;
+                if (buf.byteLength > 127) {
+                  var hdr = new Uint8Array(buf, 0, 8);
+                  if (hdr[0]===0x89 && hdr[1]===0x50 && hdr[2]===0x4e && hdr[3]===0x47 &&
+                      hdr[4]===0x0d && hdr[5]===0x0a && hdr[6]===0x1a && hdr[7]===0x0a) {
+                    data = buf.slice(127);
                   }
-                  origSuccess(resp, stats, ctx2, net);
-                },
+                }
+                cbs.onSuccess({ data: data }, self.stats, ctx, null);
+              })
+              .catch(function (err) {
+                debugLog('fLoader ERR: ' + err.message);
+                if (err.name === 'AbortError') return;
+                self.stats.loading.end = performance.now();
+                cbs.onError({ code: 0, text: err.message }, ctx, null, self.stats);
               });
-              inner.load(ctx, cfg, modCbs);
-            };
           };
 
           var hlsCfg = {
             maxBufferLength: 30,
             maxMaxBufferLength: 60,
-            xhrSetup: function (xhr) {
-              xhr.withCredentials = false;
-            },
-            fLoader: AvsFragLoader,
+            fLoader: ProxyFragLoader,
           };
           var hls = new Hls(hlsCfg);
           hls.loadSource(hlsSources[0].file);
@@ -900,7 +920,7 @@
             video.play().catch(function () {});
           });
           hls.on(Hls.Events.ERROR, function (event, data) {
-            console.error('[AVS HLS] error:', data.type, data.details);
+            debugLog('HLS err: ' + data.type + ' ' + data.details);
             if (data.fatal) {
               if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                 console.log('[AVS HLS] network error, retrying…');
