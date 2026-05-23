@@ -35,6 +35,19 @@ async function getIframeRectViaCDP(win: BrowserWindow) {
     traverse(root);
 
     if (targetNodeId) {
+      try {
+        const { object } = await win.webContents.debugger.sendCommand('DOM.resolveNode', { nodeId: targetNodeId });
+        if (object && object.objectId) {
+          await win.webContents.debugger.sendCommand('Runtime.callFunctionOn', {
+            objectId: object.objectId,
+            functionDeclaration: 'function() { this.scrollIntoView({ behavior: "instant", block: "center", inline: "center" }); }',
+          });
+          await sleep(50);
+        }
+      } catch (scrollErr) {
+        console.error('[CDP Scroll Error]', scrollErr);
+      }
+
       const { model } = await win.webContents.debugger.sendCommand(
         'DOM.getBoxModel',
         { nodeId: targetNodeId },
@@ -82,9 +95,14 @@ export async function solveCloudflare(
     let attempts = 0;
     while (attempts < 15) {
       if (type === 'interstitial') {
-        const scriptExists = await win.webContents.executeJavaScript(`
-            !!document.querySelector('script[src*="/cdn-cgi/challenge-platform/"]')
-         `);
+        let scriptExists = true;
+        try {
+          scriptExists = await win.webContents.executeJavaScript(`
+              !!document.querySelector('script[src*="/cdn-cgi/challenge-platform/"]')
+           `);
+        } catch (e) {
+          scriptExists = false;
+        }
         if (!scriptExists) {
           console.log(
             '[solveCloudflare] Interstitial challenge passed automatically.',
@@ -165,34 +183,73 @@ export async function solveCloudflare(
       for (let i = 0; i < 7; i++) {
         await sleep(1000);
 
-        if (type === 'turnstile') {
-          const rect = await getIframeRectViaCDP(win);
-          if (!rect) {
-            solved = true;
-            break;
-          }
+        let isNavigatingOrSolved = false;
 
-          const responseValue = await win.webContents.executeJavaScript(`
-             (function() {
-                const input = document.querySelector('input[name="cf-turnstile-response"]');
-                return input ? input.value : null;
-             })();
-           `);
+        try {
+          const indicators = await win.webContents.executeJavaScript(`
+            (() => {
+               const hasScript = !!document.querySelector('script[src*="/cdn-cgi/challenge-platform/"]');
+               const hasTurnstile = !!document.querySelector('script[src*="challenges.cloudflare.com/turnstile/v0"]') || !!document.querySelector('input[name="cf-turnstile-response"]');
+               const input = document.querySelector('input[name="cf-turnstile-response"]');
+               const turnstileValue = input ? input.value : null;
+               return { hasScript, hasTurnstile, turnstileValue };
+            })();
+          `);
 
-          if (responseValue && responseValue.length > 0) {
-            solved = true;
-            console.log('[solveCloudflare] Turnstile response token found.');
-            break;
+          if (type === 'turnstile') {
+            if (indicators.turnstileValue && indicators.turnstileValue.length > 0) {
+              console.log('[solveCloudflare] Turnstile response token found.');
+              isNavigatingOrSolved = true;
+            } else if (!indicators.hasTurnstile) {
+              console.log('[solveCloudflare] Turnstile indicators no longer present.');
+              isNavigatingOrSolved = true;
+            }
+          } else {
+            if (!indicators.hasScript) {
+              console.log('[solveCloudflare] Interstitial challenge passed.');
+              isNavigatingOrSolved = true;
+            }
           }
-        } else {
-          const scriptExists = await win.webContents.executeJavaScript(`
-              !!document.querySelector('script[src*="/cdn-cgi/challenge-platform/"]')
-           `);
-          if (!scriptExists) {
-            solved = true;
-            console.log('[solveCloudflare] Interstitial challenge passed.');
-            break;
+        } catch (e) {
+          // Context destroyed usually means the page navigated away successfully
+          console.log('[solveCloudflare] Context destroyed, assuming navigated/solved.');
+          isNavigatingOrSolved = true;
+        }
+
+        // Additional check for Turnstile: the success div inside shadow DOM
+        if (!isNavigatingOrSolved && type === 'turnstile') {
+          try {
+            const { root } = await win.webContents.debugger.sendCommand('DOM.getDocument', { depth: -1, pierce: true });
+            let success = false;
+            function traverse(node: any) {
+              if (success) return;
+              if (node.nodeName && node.nodeName.toLowerCase() === 'div' && node.attributes) {
+                const idIdx = node.attributes.indexOf('id');
+                if (idIdx !== -1 && node.attributes[idIdx + 1] === 'success') {
+                  success = true;
+                  return;
+                }
+              }
+              if (node.children) {
+                for (const child of node.children) traverse(child);
+              }
+              if (node.shadowRoots) {
+                for (const shadow of node.shadowRoots) traverse(shadow);
+              }
+            }
+            traverse(root);
+            if (success) {
+              console.log('[solveCloudflare] Turnstile success div found inside shadow DOM.');
+              isNavigatingOrSolved = true;
+            }
+          } catch (e) {
+            // Ignore CDP errors
           }
+        }
+
+        if (isNavigatingOrSolved) {
+          solved = true;
+          break;
         }
       }
 
