@@ -12,7 +12,7 @@ class JukaNovelPlugin implements Plugin.PluginBase {
   name = 'JukaNovel';
   icon = 'src/vi/jukanovel/icon.png';
   site = 'https://jukaza.site';
-  version = '1.0.7';
+  version = '1.0.8';
 
   pluginSettings: Plugin.PluginSettings = {
     preferRaw: {
@@ -191,6 +191,11 @@ class JukaNovelPlugin implements Plugin.PluginBase {
     }
 
     if (!content) return '';
+
+    const $ = loadCheerio(content);
+    $('.jkz-trap').remove();
+    content = $('body').html() || '';
+
     const notes: string[] = [];
     let regex: RegExp | null = null;
     try {
