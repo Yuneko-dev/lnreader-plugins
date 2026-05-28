@@ -109,7 +109,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.5';
+  version = '1.2.6';
 
   customCSS = 'src/vi/hakolightnovel/custom.css';
 
@@ -498,6 +498,7 @@ class HakoPlugin implements Plugin.PluginBase {
       commentSection.find('.fas.fa-chevron-down').remove();
       commentSection.find('.ln-comment-page').remove();
       commentSection.find('.comment_see_more').remove();
+      commentSection.find('.leading-tight').remove();
 
       // Remove loading svg
       commentSection.find('.loading').remove();
