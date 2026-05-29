@@ -15,8 +15,17 @@ export function debugLog(msg: string) {
   if (!el) {
     el = document.createElement('div');
     el.id = 'avs-debug-log';
-    el.style.cssText =
-      'color:#aaa;font-family:monospace;font-size:11px;padding:8px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;';
+    el.style.cssText =`
+    background: #111;
+    color: #aaa
+    font-family: monospace;
+    font-size: 11px;
+    padding: 8px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 300px;
+    overflow-y: auto;
+    border-top: 1px solid #333;`;
     playerContainer.appendChild(el);
   }
   el.textContent = _debugLog.join('\n');

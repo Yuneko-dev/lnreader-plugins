@@ -13,7 +13,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   name = 'AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
   site = 'https://animevietsub.site';
-  version = '1.0.24';
+  version = '1.0.25';
   filters = filters;
   customJS = 'src/vi/animevietsub/player.js';
 
@@ -441,8 +441,8 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
 
     return [
       `<div ${attrs.join(' ')}`,
-      '  style="position:relative;width:100%;padding-bottom:56.25%;background:#000;">',
-      '  <div id="avs-player-inner" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">',
+      '  style="width: 100%; aspect-ratio: 16/9; background: #000; min-height: 200px;">',
+      '  <div id="avs-player-inner" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">',
       '    <p style="color:#fff;font-family:sans-serif;">Đang tải video...</p>',
       '  </div>',
       '</div>',
