@@ -38,6 +38,7 @@ export function initArtplayer(
     },
     controls: [
       {
+        name: 'rewind5',
         position: 'right',
         html: icons.rewind5,
         tooltip: 'Tua lại 5s',
@@ -49,6 +50,7 @@ export function initArtplayer(
         },
       },
       {
+        name: 'forward5',
         position: 'right',
         html: icons.forward5,
         tooltip: 'Tua tới 5s',
