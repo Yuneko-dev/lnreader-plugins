@@ -256,6 +256,16 @@ function normalizeChapterHtml(host: string, raw: string): string {
     text = decodeGlyphs(text);
   }
 
+  // Convert any [img=w,h]{url}[/img] => <img>
+  const regexImage = /\[img(=\d+,\d+)?\](.+)\[\/img\]/g;
+  text = text.replace(regexImage, (match, dimensions, url) => {
+    if (dimensions) {
+      const [width, height] = dimensions.replace('=', '').split(',');
+      return `<img src="${url}" width="${width}" height="${height}" />`;
+    }
+    return `<img src="${url}" />`;
+  });
+
   const $ = parseHTML(text, null, false);
 
   if (h === 'fanqie') {
@@ -361,7 +371,7 @@ class STVChapterError extends Error {
   constructor(code: number, detail: any) {
     super(
       `${STVChapterError.getMessage(code)} (code ${code})\n` +
-        STVChapterError.stringifyJson(detail),
+      STVChapterError.stringifyJson(detail),
     );
     this.name = 'STVChapterError';
     this.errorCode = code;
@@ -432,7 +442,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.23';
+  version = '1.0.24';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
