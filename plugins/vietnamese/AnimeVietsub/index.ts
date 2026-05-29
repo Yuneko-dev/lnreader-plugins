@@ -13,7 +13,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   name = 'AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
   site = 'https://animevietsub.site';
-  version = '1.0.27';
+  version = '1.0.28';
   filters = filters;
   customJS = 'src/vi/animevietsub/player.js';
   customCSS = 'src/vi/animevietsub/custom.css';
@@ -28,6 +28,15 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
         { label: 'Embed (iframe)', value: 'embed' },
       ],
     },
+    playerType: {
+      value: 'artplayer',
+      label: 'Trình phát Video',
+      type: 'Select',
+      options: [
+        { label: 'Artplayer (Tùy chỉnh)', value: 'artplayer' },
+        { label: 'Video HTML (Mặc định)', value: 'html' },
+      ],
+    },
     enableDebug: {
       value: false,
       label: 'Bật debug',
@@ -37,6 +46,10 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
 
   get playMode(): string {
     return (storage.get('playMode') as string) || 'm3u8';
+  }
+
+  get playerType(): string {
+    return (storage.get('playerType') as string) || 'artplayer';
   }
 
   get enableDebug(): boolean {
@@ -438,6 +451,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     if (opts.referer) attrs.push(`data-referer="${esc(opts.referer)}"`);
     if (opts.site) attrs.push(`data-site="${esc(opts.site)}"`);
     attrs.push(`data-mode="${opts.embedOnly ? 'embed' : this.playMode}"`);
+    attrs.push(`data-player-type="${this.playerType}"`);
     if (this.enableDebug) attrs.push('data-debug="1"');
 
     return [

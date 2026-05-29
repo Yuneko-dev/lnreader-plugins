@@ -5,6 +5,7 @@
 import { debugLog, showError, escapeAttr } from './utils';
 import type { MediaSource } from './types';
 import { initArtplayer } from './artplayer';
+import { m3u8CustomType } from './artplayer/hls-custom-type';
 
 export function renderIframe(
   target: HTMLElement,
@@ -24,6 +25,7 @@ export async function buildVideoPlayer(
   target: HTMLElement,
   sources: MediaSource[],
   modeLabel: HTMLElement | null,
+  playerType: string,
   bannerUrl?: string,
 ) {
   const hlsSources: MediaSource[] = [];
@@ -67,5 +69,29 @@ export async function buildVideoPlayer(
     if (modeLabel) modeLabel.textContent = 'Đang ở chế độ mp4';
   }
 
-  initArtplayer(artContainer, initialUrl, initialType, bannerUrl);
+  if (playerType === 'html') {
+    const video = document.createElement('video');
+    video.controls = true;
+    video.autoplay = true;
+    video.style.width = '100%';
+    video.style.height = '100%';
+    if (bannerUrl) video.poster = bannerUrl;
+    target.appendChild(video);
+
+    if (initialType === 'm3u8') {
+      const dummyArt = {
+        notice: {
+          set show(msg: string) {
+            debugLog('HTML Video Notice: ' + msg);
+          },
+        },
+        on: () => {},
+      };
+      m3u8CustomType(video, initialUrl, dummyArt);
+    } else {
+      video.src = initialUrl;
+    }
+  } else {
+    initArtplayer(artContainer, initialUrl, initialType, bannerUrl);
+  }
 }

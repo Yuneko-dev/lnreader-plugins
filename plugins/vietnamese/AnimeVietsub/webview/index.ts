@@ -22,6 +22,7 @@ import type { PlayerConfig, ResolvedMedia } from './types';
 function parseConfig(container: HTMLElement): PlayerConfig {
   return {
     mode: container.getAttribute('data-mode') || 'm3u8',
+    playerType: container.getAttribute('data-player-type') || 'artplayer',
     debugEnabled: container.getAttribute('data-debug') === '1',
     m3u8: container.getAttribute('data-m3u8'),
     sourcesRaw: container.getAttribute('data-sources'),
@@ -78,10 +79,16 @@ function renderMedia(
   resolved: ResolvedMedia,
   inner: HTMLElement,
   modeLabel: HTMLElement | null,
-  bannerUrl?: string,
+  config: PlayerConfig,
 ) {
   if (resolved.type === 'sources' && resolved.sources) {
-    buildVideoPlayer(inner, resolved.sources, modeLabel, bannerUrl);
+    buildVideoPlayer(
+      inner,
+      resolved.sources,
+      modeLabel,
+      config.playerType,
+      config.bannerUrl!,
+    );
   } else if (resolved.type === 'iframe' && resolved.iframeUrl) {
     renderIframe(inner, resolved.iframeUrl, modeLabel);
   } else {
@@ -106,7 +113,7 @@ async function initPlayer() {
 
   try {
     const resolvedMedia = await resolveMedia(config);
-    renderMedia(resolvedMedia, inner, modeLabel, config.bannerUrl!);
+    renderMedia(resolvedMedia, inner, modeLabel, config);
   } catch (error: any) {
     showError(error.message || 'Lỗi không xác định.');
     console.error('[AVS] Pipeline Error:', error);

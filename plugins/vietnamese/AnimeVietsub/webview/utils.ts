@@ -15,7 +15,7 @@ export function debugLog(msg: string) {
   if (!el) {
     el = document.createElement('div');
     el.id = 'avs-debug-log';
-    el.style.cssText =`
+    el.style.cssText = `
     background: #111;
     color: #aaa
     font-family: monospace;

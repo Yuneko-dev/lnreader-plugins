@@ -2,6 +2,7 @@
 
 export interface PlayerConfig {
   mode: string; // 'm3u8' or 'embed'
+  playerType: string;
   debugEnabled: boolean;
   m3u8?: string | null;
   sourcesRaw?: string | null;
