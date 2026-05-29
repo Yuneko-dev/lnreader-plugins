@@ -442,7 +442,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.24';
+  version = '1.0.25';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -994,7 +994,8 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       }
     }
     const url = new URL(`${this.site}/io/searchtp/searchBooks`);
-    url.searchParams.set('find', searchTerm);
+    url.searchParams.set('find', searchTerm); // Tìm trong mô tả
+    url.searchParams.set('findinname', searchTerm); // Tìm tên truyện
     url.searchParams.set('minc', '0');
     url.searchParams.set('sort', '');
     url.searchParams.set('tag', '');
