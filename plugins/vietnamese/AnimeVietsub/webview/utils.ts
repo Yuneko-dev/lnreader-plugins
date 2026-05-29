@@ -26,7 +26,7 @@ export function debugLog(msg: string) {
     max-height: 300px;
     overflow-y: auto;
     border-top: 1px solid #333;`;
-    playerContainer.appendChild(el);
+    playerContainer.insertAdjacentElement('afterend', el);
   }
   el.textContent = _debugLog.join('\n');
 }
