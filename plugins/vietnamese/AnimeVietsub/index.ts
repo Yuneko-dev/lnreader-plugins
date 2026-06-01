@@ -13,7 +13,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   name = 'AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
   site = 'https://animevietsub.site';
-  version = '1.0.28';
+  version = '1.0.29';
   filters = filters;
   customJS = 'src/vi/animevietsub/player.js';
   customCSS = 'src/vi/animevietsub/custom.css';
@@ -63,12 +63,15 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   };
 
   // ---------- helpers ----------
-
   private absolutePath(href: string): string {
     if (!href) return '';
     try {
       const u = new URL(href, this.site);
-      if (u.origin === this.site) return u.pathname + u.search;
+      const siteUrl = new URL(this.site);
+      // In some cases, the returned path includes the "www." prefix
+      if (u.host.replace(/^www\./, '') === siteUrl.host.replace(/^www\./, '')) {
+        return u.pathname + u.search;
+      }
       return href;
     } catch {
       return href;
@@ -143,7 +146,6 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   }
 
   // ---------- popularNovels ----------
-
   async popularNovels(
     pageNo: number,
     {
@@ -177,7 +179,6 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   }
 
   // ---------- searchNovels ----------
-
   async searchNovels(
     searchTerm: string,
     pageNo: number,
@@ -192,7 +193,6 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   }
 
   // ---------- parseNovel ----------
-
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     const url = this.site + novelPath;
     const html = await fetchText(url);
@@ -300,7 +300,6 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   //      fetch the player page → extract avsToken & id → build m3u8 URL
   //   3. If playTech=api/all with sources → pass sources to customJS
   //   4. Fallback: extract data-hash/data-id for AJAX approach in customJS
-
   async parseChapter(chapterPath: string): Promise<string> {
     const url = this.site + chapterPath;
     const html = await fetchText(url);
