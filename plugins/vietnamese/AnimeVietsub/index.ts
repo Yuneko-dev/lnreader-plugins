@@ -29,12 +29,12 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
       ],
     },
     playerType: {
-      value: 'artplayer',
+      value: 'html',
       label: 'Trình phát Video',
       type: 'Select',
       options: [
-        { label: 'Artplayer', value: 'artplayer' },
         { label: 'Video HTML', value: 'html' },
+        { label: 'Artplayer', value: 'artplayer' },
       ],
     },
     enableDebug: {
