@@ -22,6 +22,7 @@ import {
 import { useAppStore } from '@/store';
 import { Plugin } from '@/types/plugin';
 import { useEpubExport } from '@/hooks/useEpubExport';
+import { TableVirtuoso } from 'react-virtuoso';
 
 type ParseNovelSectionProps = {
   onNavigateToParseChapter?: () => void;
@@ -449,37 +450,65 @@ export default function ParseNovelSection({
                     </div>
                   )}
                 </div>
-                <div className="overflow-x-auto border border-border rounded-lg">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/50">
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-4 font-semibold text-foreground w-16">
-                          #
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-foreground">
-                          Name
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-foreground w-28">
-                          Actions
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-foreground w-32">
-                          Release Time
-                        </th>
-                        {chapters.some(ch => ch.chapterNumber) && (
-                          <th className="text-left py-3 px-4 font-semibold text-foreground w-24">
-                            Chapter #
+                <div className="overflow-x-auto border border-border rounded-lg h-[600px] w-full">
+                  <TableVirtuoso
+                    data={chapters}
+                    useWindowScroll={false}
+                    overscan={200}
+                    components={{
+                      Table: props => (
+                        <table {...props} className="w-full text-sm" />
+                      ),
+                      TableHead: React.forwardRef((props, ref) => (
+                        <thead {...props} ref={ref} className="bg-muted/50" />
+                      )),
+                      TableRow: props => {
+                        const index = props['data-index'];
+                        return (
+                          <tr
+                            {...props}
+                            className={`border-b border-border hover:bg-muted/70 transition-colors ${
+                              index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
+                            }`}
+                          />
+                        );
+                      },
+                      TableBody: React.forwardRef((props, ref) => (
+                        <tbody {...props} ref={ref} />
+                      )),
+                    }}
+                    fixedHeaderContent={() => {
+                      const hasChapterNumber = chapters.some(
+                        ch => ch.chapterNumber,
+                      );
+                      return (
+                        <tr className="border-b border-border bg-muted/50">
+                          <th className="text-left py-3 px-4 font-semibold text-foreground w-16">
+                            #
                           </th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {chapters.map((chapter, index) => (
-                        <tr
-                          key={`${chapter.path}-${index}`}
-                          className={`border-b border-border hover:bg-muted/70 transition-colors ${
-                            index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
-                          }`}
-                        >
+                          <th className="text-left py-3 px-4 font-semibold text-foreground">
+                            Name
+                          </th>
+                          <th className="text-left py-3 px-4 font-semibold text-foreground w-28">
+                            Actions
+                          </th>
+                          <th className="text-left py-3 px-4 font-semibold text-foreground w-32">
+                            Release Time
+                          </th>
+                          {hasChapterNumber && (
+                            <th className="text-left py-3 px-4 font-semibold text-foreground w-24">
+                              Chapter #
+                            </th>
+                          )}
+                        </tr>
+                      );
+                    }}
+                    itemContent={(index, chapter) => {
+                      const hasChapterNumber = chapters.some(
+                        ch => ch.chapterNumber,
+                      );
+                      return (
+                        <>
                           <td className="py-2.5 px-4 text-muted-foreground text-xs">
                             {index}
                           </td>
@@ -530,15 +559,15 @@ export default function ParseNovelSection({
                           <td className="py-2.5 px-4 text-muted-foreground text-xs">
                             {formatDate(chapter.releaseTime)}
                           </td>
-                          {chapters.some(ch => ch.chapterNumber) && (
+                          {hasChapterNumber && (
                             <td className="py-2.5 px-4 text-muted-foreground text-xs">
                               {chapter.chapterNumber || '-'}
                             </td>
                           )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                        </>
+                      );
+                    }}
+                  />
                 </div>
               </div>
             )}

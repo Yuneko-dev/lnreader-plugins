@@ -371,7 +371,7 @@ class STVChapterError extends Error {
   constructor(code: number, detail: any) {
     super(
       `${STVChapterError.getMessage(code)} (code ${code})\n` +
-      STVChapterError.stringifyJson(detail),
+        STVChapterError.stringifyJson(detail),
     );
     this.name = 'STVChapterError';
     this.errorCode = code;

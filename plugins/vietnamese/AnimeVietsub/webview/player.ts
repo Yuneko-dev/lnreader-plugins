@@ -130,7 +130,9 @@ export async function buildVideoPlayer(
           // Cập nhật tiến độ sau mỗi 5 giây
           if (Math.abs(currentTime - lastSaveTime) >= 5) {
             lastSaveTime = currentTime;
-            const progressInt = Math.floor((currentTime / video.duration) * 100);
+            const progressInt = Math.floor(
+              (currentTime / video.duration) * 100,
+            );
             window.reader.post({
               type: 'save',
               data: progressInt,
