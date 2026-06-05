@@ -14,7 +14,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   name = 'AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
   site = 'https://animevietsub.name';
-  version = '1.0.33';
+  version = '1.0.34';
   filters = filters;
   customJS = 'src/vi/animevietsub/player.js';
   customCSS = 'src/vi/animevietsub/custom.css';
@@ -71,6 +71,21 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
       const parsed = new URL(url);
       return url.slice(parsed.origin.length);
     }
+  }
+
+  private async fetchHTML(url: string, isRetry = false): Promise<string> {
+    const text = await fetchText(url);
+    if (
+      text.includes('<title></title>') &&
+      text.includes('<div></div>') &&
+      /window\.location\.href\s*=\s*(["'`])(.*?)\1\s*;?/.test(text) &&
+      !isRetry
+    ) {
+      console.warn("Redirected, trying to fetch HTML again", url);
+      // Retry once
+      return this.fetchHTML(url, true);
+    }
+    return text;
   }
 
   private checkCommonBlocked($: ReturnType<typeof loadCheerio>): void {
@@ -164,12 +179,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     url.searchParams.set('sort', filters.sort?.value || 'latest');
     // Build URL
     // https://animevietsub.bz/danh-sach/category/genre_list/season/year/studio/age/country?sort=?
-    const html = await fetchText(url.toString());
-    if (html.includes('<title></title><div></div>')) {
-      throw new Error(
-        'Không tải được danh sách Anime. Hãy thử lại sau ít giây nữa.',
-      );
-    }
+    const html = await this.fetchHTML(url.toString());
     return this.parseListHtml(html);
   }
 
@@ -183,14 +193,14 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
       pageNo <= 1
         ? `${this.site}/tim-kiem/${term}/F`
         : `${this.site}/tim-kiem/${term}/trang-${pageNo}.html`;
-    const html = await fetchText(url);
+    const html = await this.fetchHTML(url);
     return this.parseListHtml(html);
   }
 
   // ---------- parseNovel ----------
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     const url = this.site + novelPath;
-    const html = await fetchText(url);
+    const html = await this.fetchHTML(url);
     if (!html) throw new Error('API error: ' + url);
     const $ = loadCheerio(html);
     this.checkCommonBlocked($);
@@ -249,7 +259,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
       const epPageUrl = latestEpHref.startsWith('http')
         ? latestEpHref
         : this.site + latestEpHref;
-      const epHtml = await fetchText(epPageUrl);
+      const epHtml = await this.fetchHTML(epPageUrl);
       novel.chapters = this.parseEpisodeList(epHtml);
     }
 
@@ -297,7 +307,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   //   4. Fallback: extract data-hash/data-id for AJAX approach in customJS
   async parseChapter(chapterPath: string): Promise<string> {
     const url = this.site + chapterPath;
-    const html = await fetchText(url);
+    const html = await this.fetchHTML(url);
     if (!html) throw new Error('API error: ' + url);
     const $ = loadCheerio(html);
     // Get banner
