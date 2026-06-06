@@ -130,7 +130,10 @@ for (let language in languages) {
     )(_require, {});
     const { id, name, site, version, icon, customJS, customCSS, filters } =
       instance;
-    if (!isValidFilename(id)) throw new Error(`This plugin ID (${id}) is invalid and cannot be used in the application.`);
+    if (!isValidFilename(id))
+      throw new Error(
+        `This plugin ID (${id}) is invalid and cannot be used in the application.`,
+      );
     const normalisedName = name.replace(/\[.*\]/, '');
 
     // --only-new logic
