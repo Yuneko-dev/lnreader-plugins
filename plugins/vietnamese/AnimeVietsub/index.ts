@@ -81,7 +81,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
       /window\.location\.href\s*=\s*(["'`])(.*?)\1\s*;?/.test(text) &&
       !isRetry
     ) {
-      console.warn("Redirected, trying to fetch HTML again", url);
+      console.warn('Redirected, trying to fetch HTML again', url);
       // Retry once
       return this.fetchHTML(url, true);
     }
