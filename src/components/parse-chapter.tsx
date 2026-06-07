@@ -110,6 +110,8 @@ export default function ParseChapterSection() {
     clearParseChapterPath,
   ]);
 
+  const isVideoChapter = /<meta\s+name=["']lnreader-chapter-type["']\s+content=["']video["']/i.test(chapterText);
+
   return (
     <div className="space-y-6">
       <Card className="p-6">
@@ -296,24 +298,22 @@ export default function ParseChapterSection() {
                             }
                             img, video, iframe { max-width: 100%; height: auto; }
                             a { color: #3b82f6; }
-                            ${corePlayerCss}
+                            ${isVideoChapter ? corePlayerCss : ''}
                           </style>
                           <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js"></script>
                           ${isElectron ? readerMockScript : ''}
-                          <script>${corePlayerRaw}</script>
-                          ${
-                            plugin?.customCSS
-                              ? `<link rel="stylesheet" href="/public/static/${plugin.customCSS}" onload="window.parent.postMessage({ type: 'asset-loaded', asset: 'css' }, '*')" onerror="window.parent.postMessage({ type: 'asset-error', asset: 'css' }, '*')">`
-                              : ''
-                          }
+                          ${isVideoChapter ? `<script>${corePlayerRaw}</script>` : ''}
+                          ${plugin?.customCSS
+                        ? `<link rel="stylesheet" href="/public/static/${plugin.customCSS}" onload="window.parent.postMessage({ type: 'asset-loaded', asset: 'css' }, '*')" onerror="window.parent.postMessage({ type: 'asset-error', asset: 'css' }, '*')">`
+                        : ''
+                      }
                         </head>
                         <body>
                           ${chapterText}
-                          ${
-                            plugin?.customJS
-                              ? `<script src="/public/static/${plugin.customJS}" onload="window.parent.postMessage({ type: 'asset-loaded', asset: 'js' }, '*')" onerror="window.parent.postMessage({ type: 'asset-error', asset: 'js' }, '*')"></script>`
-                              : ''
-                          }
+                          ${plugin?.customJS
+                        ? `<script src="/public/static/${plugin.customJS}" onload="window.parent.postMessage({ type: 'asset-loaded', asset: 'js' }, '*')" onerror="window.parent.postMessage({ type: 'asset-error', asset: 'js' }, '*')"></script>`
+                        : ''
+                      }
                         </body>
                       </html>
                     `}
@@ -331,13 +331,12 @@ export default function ParseChapterSection() {
                 </p>
                 {plugin?.customCSS && (
                   <span
-                    className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                      customCSSLoaded
+                    className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${customCSSLoaded
                         ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
                         : customCSSError
                           ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
                           : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                    }`}
+                      }`}
                   >
                     CSS:{' '}
                     {customCSSLoaded
@@ -349,13 +348,12 @@ export default function ParseChapterSection() {
                 )}
                 {plugin?.customJS && (
                   <span
-                    className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                      customJSLoaded
+                    className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${customJSLoaded
                         ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
                         : customJSError
                           ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
                           : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
-                    }`}
+                      }`}
                   >
                     JS:{' '}
                     {customJSLoaded
