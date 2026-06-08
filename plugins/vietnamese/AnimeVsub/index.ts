@@ -90,7 +90,11 @@ class AnimeVsubPlugin implements Plugin.PluginBase {
       const name = $(el).find('.movie-title a').text().trim();
       const link = $(el).find('.movie-title a').attr('href');
       const imgEl = $(el).find('.movie-poster img');
-      const cover = imgEl.attr('src') || imgEl.attr('data-src') || imgEl.attr('data-lazy-src') || defaultCover;
+      const cover =
+        imgEl.attr('src') ||
+        imgEl.attr('data-src') ||
+        imgEl.attr('data-lazy-src') ||
+        defaultCover;
       const ep = $(el).find('.movie-episode-last').text().trim();
 
       if (name && link) {
@@ -111,16 +115,28 @@ class AnimeVsubPlugin implements Plugin.PluginBase {
     const html = await res.text();
     const $ = loadCheerio(html);
 
-    let name = $('h1.movie-title-detail').text().trim() || $('meta[property="og:title"]').attr('content') || '';
-    name = name.replace(/^phim\s+/i, '').replace(/\s*(tập\s*\d+.*|vietsub.*)$/i, '').replace(/\s*HD\s*Vietsub.*$/i, '').trim();
+    let name =
+      $('h1.movie-title-detail').text().trim() ||
+      $('meta[property="og:title"]').attr('content') ||
+      '';
+    name = name
+      .replace(/^phim\s+/i, '')
+      .replace(/\s*(tập\s*\d+.*|vietsub.*)$/i, '')
+      .replace(/\s*HD\s*Vietsub.*$/i, '')
+      .trim();
 
     const originalName = $('h2.movie-original-title').text().trim();
-    let cover = $('.movie-box-img img.thumbnail').attr('src') || $('meta[property="og:image"]').attr('content');
+    let cover =
+      $('.movie-box-img img.thumbnail').attr('src') ||
+      $('meta[property="og:image"]').attr('content');
     cover = this.normalizeUrl(cover || defaultCover);
 
     const descEl = $('.content-detail').first();
     descEl.find('h2').remove();
-    const description = descEl.text().trim() || $('meta[property="og:description"]').attr('content') || '';
+    const description =
+      descEl.text().trim() ||
+      $('meta[property="og:description"]').attr('content') ||
+      '';
 
     let status = NovelStatus.Unknown as string;
     const author = originalName || 'AnimeVsub';
@@ -130,9 +146,15 @@ class AnimeVsubPlugin implements Plugin.PluginBase {
       const value = $(el).find('.meta-value').text().trim();
 
       if (label.includes('Trạng thái')) {
-        if (value.toLowerCase().includes('đang chiếu') || value.toLowerCase().includes('ongoing')) {
+        if (
+          value.toLowerCase().includes('đang chiếu') ||
+          value.toLowerCase().includes('ongoing')
+        ) {
           status = NovelStatus.Ongoing;
-        } else if (value.toLowerCase().includes('kết thúc') || value.toLowerCase().includes('hoàn thành')) {
+        } else if (
+          value.toLowerCase().includes('kết thúc') ||
+          value.toLowerCase().includes('hoàn thành')
+        ) {
           status = NovelStatus.Completed;
         }
       }
@@ -140,7 +162,8 @@ class AnimeVsubPlugin implements Plugin.PluginBase {
 
     const chapters: Plugin.ChapterItem[] = [];
     $('.episodes-grid a').each((_, el) => {
-      const epName = $(el).find('.episode-number').text().trim() || $(el).text().trim();
+      const epName =
+        $(el).find('.episode-number').text().trim() || $(el).text().trim();
       const epUrl = $(el).attr('href');
       if (epName && epUrl) {
         chapters.push({
@@ -206,7 +229,11 @@ class AnimeVsubPlugin implements Plugin.PluginBase {
       const name = $(el).find('.movie-title a').text().trim();
       const link = $(el).find('.movie-title a').attr('href');
       const imgEl = $(el).find('.movie-poster img');
-      const cover = imgEl.attr('src') || imgEl.attr('data-src') || imgEl.attr('data-lazy-src') || defaultCover;
+      const cover =
+        imgEl.attr('src') ||
+        imgEl.attr('data-src') ||
+        imgEl.attr('data-lazy-src') ||
+        defaultCover;
       const ep = $(el).find('.movie-episode-last').text().trim();
 
       if (name && link) {
