@@ -369,11 +369,20 @@ class __PLUGIN_CLASS_NAME__ implements Plugin.PluginBase {
     let genResult: any;
     /* __VBOOK_GEN__ */
 
+    let resultObj = genResult;
+    if (typeof genResult === 'string') {
+      try {
+        resultObj = JSON.parse(genResult);
+      } catch (e) {}
+    }
+
     const hasNext =
-      genResult && typeof genResult === 'object' && genResult.next;
+      resultObj && typeof resultObj === 'object' && resultObj.next;
     this.lastPageHasNext.set(cacheKey, !!hasNext);
 
-    const items = genResult?.data || genResult || [];
+    let items = resultObj?.data || resultObj || [];
+    if (!Array.isArray(items)) items = [];
+
     return items.map((item: any) => ({
       name: item.name || item.title || 'Unknown',
       path: item.link || item.id || '',
@@ -390,17 +399,30 @@ class __PLUGIN_CLASS_NAME__ implements Plugin.PluginBase {
     let tocResult: any;
     /* __VBOOK_TOC__ */
 
+    let dRes = detailResult;
+    if (typeof detailResult === 'string') {
+      try { dRes = JSON.parse(detailResult); } catch (e) {}
+    }
+    dRes = dRes?.data || dRes || {};
+
+    let tRes = tocResult;
+    if (typeof tocResult === 'string') {
+      try { tRes = JSON.parse(tocResult); } catch (e) {}
+    }
+    tRes = tRes?.data || tRes || [];
+    if (!Array.isArray(tRes)) tRes = [];
+
     return {
       path: novelPath,
-      name: detailResult?.name || detailResult?.title || 'Unknown',
-      cover: detailResult?.cover || defaultCover,
-      summary: detailResult?.description,
-      author: detailResult?.author,
-      status: detailResult?.ongoing === false ? 'Completed' : 'Ongoing',
+      name: dRes?.name || dRes?.title || 'Unknown',
+      cover: dRes?.cover || defaultCover,
+      summary: dRes?.description,
+      author: dRes?.author,
+      status: dRes?.ongoing === false ? 'Completed' : 'Ongoing',
       chapters: (() => {
         let currentSection = '';
         const chaps: any[] = [];
-        (tocResult || []).forEach((c: any) => {
+        tRes.forEach((c: any) => {
           if (c.type === 'section' || c.isVolume) {
             currentSection = c.name;
           } else {
@@ -447,11 +469,20 @@ class __PLUGIN_CLASS_NAME__ implements Plugin.PluginBase {
     let searchResult: any;
     /* __VBOOK_SEARCH__ */
 
+    let resultObj = searchResult;
+    if (typeof searchResult === 'string') {
+      try {
+        resultObj = JSON.parse(searchResult);
+      } catch (e) {}
+    }
+
     const hasNext =
-      searchResult && typeof searchResult === 'object' && searchResult.next;
+      resultObj && typeof resultObj === 'object' && resultObj.next;
     this.lastPageHasNext.set(cacheKey, !!hasNext);
 
-    const items = searchResult?.data || searchResult || [];
+    let items = resultObj?.data || resultObj || [];
+    if (!Array.isArray(items)) items = [];
+
     return items.map((item: any) => ({
       name: item.name || item.title || 'Unknown',
       path: item.link || item.id || '',

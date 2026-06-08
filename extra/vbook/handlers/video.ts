@@ -148,8 +148,15 @@ export async function handleVideoPlugin(
     
     ${trackTransformed}
     
+    let validServers = servers;
+    if (typeof servers === 'string') {
+        try { validServers = JSON.parse(servers); } catch(e) {}
+    }
+    validServers = validServers?.data || validServers || [];
+    if (!Array.isArray(validServers)) validServers = [];
+
     const validTracks: any[] = [];
-    await Promise.all((servers || []).map(async (srv: any) => {
+    await Promise.all(validServers.map(async (srv: any) => {
         try {
             const trackResult = await trackExecute(srv.data || srv.link);
             if (trackResult && trackResult.data) {
