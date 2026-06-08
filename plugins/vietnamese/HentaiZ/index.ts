@@ -449,10 +449,10 @@ const yearOptions: { label: string; value: string }[] = [
 
 class HentaiZPlugin implements Plugin.PluginBase {
   id = 'hentaiz';
-  name = 'HentaiZ';
+  name = '🎞 HentaiZ';
   icon = 'src/vi/hentaiz/icon.png';
   site = SITE;
-  version = '1.0.10';
+  version = '1.0.11';
 
   customJS = 'src/vi/hentaiz/player.js';
 
@@ -844,9 +844,24 @@ class HentaiZPlugin implements Plugin.PluginBase {
     m3u8Playlists?: string[];
   }): string {
     const esc = (s: string) => encodeHtmlEntities(s);
-    const attrs: string[] = ['id="htz-player-container"'];
 
-    if (opts.iframe) attrs.push(`data-iframe="${esc(opts.iframe)}"`);
+    const base: string[] = [
+      '<meta name="lnreader-chapter-type" content="video">',
+      `<meta name="lnreader-debug-mode" content="false">`,
+      '<meta id="no-cache-marker"/>',
+      '<meta id="no-prefetch-marker"/>',
+    ];
+
+    if (opts.iframe) {
+      return [
+        ...base,
+        '<meta name="lnreader-video-mode" content="direct">',
+        '<meta name="lnreader-video-type" content="iframe">',
+        `<meta name="lnreader-video-url" content="${esc(opts.iframe)}">`,
+      ].join('\n');
+    }
+
+    const attrs: string[] = ['id="htz-player-container"'];
     if (opts.m3u8Master)
       attrs.push(`data-m3u8-master="${esc(opts.m3u8Master)}"`);
     if (opts.m3u8Playlists) {
@@ -855,16 +870,10 @@ class HentaiZPlugin implements Plugin.PluginBase {
       );
     }
 
-    const mode = opts.m3u8Master ? 'Đang ở chế độ m3u8' : 'Đang ở chế độ embed';
-
     return [
-      `<div ${attrs.join(' ')} style="position:relative;width:100%;padding-bottom:56.25%;background:#000;">`,
-      '  <div id="htz-player-inner" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">',
-      '    <p style="color:#fff;font-family:sans-serif;">Đang tải video...</p>',
-      '  </div>',
-      '</div>',
-      `<p style="color:#888;font-size:12px;font-family:sans-serif;text-align:center;margin:4px 0;">${mode}</p>`,
-      '<meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>',
+      ...base,
+      '<meta name="lnreader-video-mode" content="lazy">',
+      `<div ${attrs.join(' ')} style="display:none;"></div>`,
     ].join('\n');
   }
 

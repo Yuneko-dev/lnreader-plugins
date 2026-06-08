@@ -14,7 +14,6 @@
  *   4. data-hash    → AJAX /ajax/player fallback
  */
 import { initUtils, debugLog, showError } from './utils';
-import { buildVideoPlayer, renderIframe } from './player';
 import { fetchAjaxPlayer } from './ajax';
 import { resolveGoogleApisCdn } from './google_cdn';
 import type { PlayerConfig, ResolvedMedia } from './types';
@@ -75,24 +74,29 @@ async function resolveMedia(config: PlayerConfig): Promise<ResolvedMedia> {
   throw new Error('Thiếu thông tin cấu hình, không thể xác định nguồn phát.');
 }
 
-function renderMedia(
-  resolved: ResolvedMedia,
-  inner: HTMLElement,
-  modeLabel: HTMLElement | null,
-  config: PlayerConfig,
-) {
+function renderMedia(resolved: ResolvedMedia, config: PlayerConfig) {
+  // @ts-ignore
+  if (!window.LNReaderPlayer) return;
+  // @ts-ignore
+  const player = window.LNReaderPlayer;
+
   if (resolved.type === 'sources' && resolved.sources) {
-    buildVideoPlayer(
-      inner,
-      resolved.sources,
-      modeLabel,
-      config.playerType,
-      config.bannerUrl!,
-    );
+    const s = resolved.sources[0];
+    const file = (s.file || '').replace(/^&http/, 'http');
+    if (s.type === 'hls' || /\\.m3u8(\\?|$)/i.test(file)) {
+      player.log('[AVS] Playing M3U8: ' + file);
+      player.playHls(file);
+    } else {
+      player.log('[AVS] Playing Direct: ' + file);
+      player.playDirect(file);
+    }
   } else if (resolved.type === 'iframe' && resolved.iframeUrl) {
-    renderIframe(inner, resolved.iframeUrl, modeLabel);
+    player.log('[AVS] Playing Iframe: ' + resolved.iframeUrl);
+    player.playIframe(resolved.iframeUrl);
   } else {
-    showError('Không nhận được định dạng phát hợp lệ từ Resolver.');
+    player.log(
+      '[AVS] Error: Không nhận được định dạng phát hợp lệ từ Resolver.',
+    );
   }
 }
 
@@ -100,20 +104,12 @@ async function initPlayer() {
   const container = document.getElementById('avs-player-container');
   if (!container) return;
 
-  const inner = document.getElementById('avs-player-inner');
-  if (!inner) return;
-  // width: 100%; aspect-ratio: 16/9;
-  inner.style.width = '100%';
-  inner.style.aspectRatio = '16/9';
-
-  const modeLabel = document.getElementById('avs-mode-label');
-
   const config = parseConfig(container);
-  initUtils(container, config.debugEnabled);
+  initUtils(container);
 
   try {
     const resolvedMedia = await resolveMedia(config);
-    renderMedia(resolvedMedia, inner, modeLabel, config);
+    renderMedia(resolvedMedia, config);
   } catch (error: any) {
     showError(error.message || 'Lỗi không xác định.');
     console.error('[AVS] Pipeline Error:', error);

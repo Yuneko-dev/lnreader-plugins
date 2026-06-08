@@ -10,12 +10,10 @@ const API_BASE = SITE + '/api';
 
 class NguonCPlugin implements Plugin.PluginBase {
   id = 'nguonc';
-  name = 'NguonC';
+  name = '🎞 NguonC';
   icon = 'src/vi/nguonc/icon.png';
   site = SITE;
-  version = '1.0.6';
-
-  customJS = 'src/vi/nguonc/player.js';
+  version = '1.0.7';
 
   filters = {
     category: {
@@ -270,21 +268,27 @@ class NguonCPlugin implements Plugin.PluginBase {
   // ---------- buildPlayerHtml ----------
 
   private buildPlayerHtml(opts: { m3u8?: string; embed?: string }): string {
-    const esc = (s: string) => encodeHtmlEntities(s);
+    const metas: string[] = [
+      '<meta name="lnreader-chapter-type" content="video">',
+      '<meta name="lnreader-video-mode" content="direct">',
+      '<meta name="lnreader-debug-mode" content="false">',
+      '<meta id="no-cache-marker"/>',
+      '<meta id="no-prefetch-marker"/>',
+    ];
 
-    const attrs: string[] = ['id="nguonc-player-container"'];
-    if (opts.m3u8) attrs.push(`data-m3u8="${esc(opts.m3u8)}"`);
-    if (opts.embed) attrs.push(`data-embed="${esc(opts.embed)}"`);
+    if (opts.embed) {
+      metas.push('<meta name="lnreader-video-type" content="iframe">');
+      metas.push(
+        `<meta name="lnreader-video-url" content="${encodeHtmlEntities(opts.embed)}">`,
+      );
+    } else if (opts.m3u8) {
+      metas.push('<meta name="lnreader-video-type" content="m3u8">');
+      metas.push(
+        `<meta name="lnreader-video-url" content="${encodeHtmlEntities(opts.m3u8)}">`,
+      );
+    }
 
-    return [
-      `<div ${attrs.join(' ')}`,
-      '  style="position:relative;width:100%;padding-bottom:56.25%;background:#000;">',
-      '  <div id="nguonc-player-inner" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">',
-      '    <p style="color:#fff;font-family:sans-serif;">Đang tải video...</p>',
-      '  </div>',
-      '</div>',
-      '<meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>',
-    ].join('\n');
+    return metas.join('\n');
   }
 
   resolveUrl(path: string, isNovel?: boolean): string {

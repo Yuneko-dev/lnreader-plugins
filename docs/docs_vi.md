@@ -173,3 +173,70 @@ import { solveCloudflare } from '@/lib/utils';
 const result1 = await solveCloudflare("https://2captcha.com/demo/cloudflare-turnstile", "turnstile");
 const result2 = await solveCloudflare("https://2captcha.com/demo/cloudflare-turnstile-challenge", "interstitial");
 ```
+
+### 4. Xây dựng Plugin Video (Anime)
+
+LNReader cung cấp sẵn một trình phát video (Core Player) mạnh mẽ dựa trên `hls.js` và `HTML5 Video`. Nó hỗ trợ phát `m3u8`, `mp4` và cả `iframe` trực tiếp trong ứng dụng. Bạn **không cần** tự viết CSS hay nhúng thư viện bên ngoài. Chỉ cần plugin trả về một cấu trúc HTML chứa các thẻ `<meta>` đúng quy chuẩn, phần còn lại sẽ do App tự động xử lý.
+
+Có 2 phương thức hoạt động chính:
+
+#### Phương thức 1: Direct Mode (Phát trực tiếp)
+Dành cho các trang đơn giản, nơi bạn bóc tách được trực tiếp link video (`m3u8`, `mp4` hoặc link `iframe`) ngay trong code TypeScript của plugin mà không cần thực thi code trong webview.
+
+**Cách dùng:**
+Trong hàm `parseChapter`, bạn chỉ cần trả về một chuỗi HTML chứa các thẻ `<meta>` sau:
+
+```typescript
+async parseChapter(chapterUrl: string): Promise<string> {
+    const videoUrl = "https://example.com/video.m3u8";
+    
+    return [
+      '<meta name="lnreader-chapter-type" content="video">', // Bắt buộc
+      '<meta name="lnreader-video-mode" content="direct">',  // Chế độ direct
+      '<meta name="lnreader-video-type" content="m3u8">',    // Loại: 'm3u8','video-file', 'iframe'
+      `<meta name="lnreader-video-url" content="${videoUrl}">` // Link video
+    ].join('\n');
+}
+```
+*Lưu ý: App sẽ tự khởi tạo Player, tự lấy cấu hình và tự động phát video ngay lập tức.*
+
+#### Phương thức 2: Lazy Mode (Phát trì hoãn nâng cao)
+Dành cho các trang phức tạp cần chạy Javascript trực tiếp trên WebView (để bypass Cloudflare, vượt Captcha, tự giải mã m3u8, hoặc tạo blob giả). Bạn sẽ gọi thủ công hàm phát video thông qua tệp `customJS`.
+
+**Cách dùng:**
+Bước 1: Hàm `parseChapter` trả về HTML báo hiệu Lazy Mode:
+```typescript
+async parseChapter(chapterUrl: string): Promise<string> {
+    return [
+      '<meta name="lnreader-chapter-type" content="video">',
+      '<meta name="lnreader-video-mode" content="lazy">',
+      '<meta name="lnreader-debug-mode" content="true">', // Hiện console log trên màn hình để dễ debug
+      '<div id="my-player" style="display:none;"></div>'  // Các thẻ DOM khác nếu cần
+    ].join('\n');
+}
+```
+
+Bước 2: Trong tệp `customJS` của plugin, thực hiện logic lấy link và truyền vào API:
+```javascript
+(async function() {
+  if (!window.LNReaderPlayer) return;
+  
+  window.LNReaderPlayer.log("Đang lấy link video...");
+  try {
+    // Chèn logic ở đây...
+    const m3u8Url = await fetchVideoUrl(); 
+    
+    // Giao quyền lại cho Core Player (ví dụ: m3u8)
+    window.LNReaderPlayer.playHls(m3u8Url);
+  } catch (err) {
+    window.LNReaderPlayer.log("Lỗi: " + err.message);
+  }
+})();
+```
+
+#### Bảng API của `window.LNReaderPlayer`
+Các hàm này được tiêm sẵn vào `window` cho bạn sử dụng trong tệp `customJS`:
+- `playDirect(url: string)`: Phát các file / url video tĩnh như `.mp4`, `.webm`, ...
+- `playHls(url: string, customHlsConfig?: object)`: Phát định dạng `.m3u8`. `customHlsConfig` cho phép ghi đè cấu hình của `hls.js` (ví dụ: dùng thuộc tính `xhrSetup` để chèn header Authorization khi stream các file fragment `.ts`).
+- `playIframe(url: string)`: Nhúng link Iframe
+- `log(msg: string)`: Ghi log ra console. Nếu `debug-mode` được bật, chuỗi log sẽ hiển thị dạng overlay

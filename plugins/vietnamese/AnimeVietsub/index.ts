@@ -11,13 +11,13 @@ import filters from './filters';
 
 class AnimeVietsubPlugin implements Plugin.PluginBase {
   id = 'animevietsub';
-  name = 'AnimeVietsub';
+  name = '🎞 AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
   site = 'https://animevietsub.by';
-  version = '1.0.35';
+  version = '1.0.36';
   filters = filters;
+
   customJS = 'src/vi/animevietsub/player.js';
-  customCSS = 'src/vi/animevietsub/custom.css';
 
   pluginSettings: Plugin.PluginSettings = {
     playMode: {
@@ -29,6 +29,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
         { label: 'Embed (iframe)', value: 'embed' },
       ],
     },
+    /*
     playerType: {
       value: 'html',
       label: 'Trình phát Video',
@@ -38,6 +39,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
         { label: 'Artplayer', value: 'artplayer' },
       ],
     },
+    */
     enableDebug: {
       value: false,
       label: 'Bật debug',
@@ -49,9 +51,11 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     return (storage.get('playMode') as string) || 'm3u8';
   }
 
+  /*
   get playerType(): string {
     return (storage.get('playerType') as string) || 'html';
   }
+  */
 
   get enableDebug(): boolean {
     return storage.get('enableDebug') as boolean;
@@ -444,6 +448,22 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   }): string {
     const esc = (s: string) => encodeHtmlEntities(s);
 
+    const base: string[] = [
+      '<meta name="lnreader-chapter-type" content="video">',
+      `<meta name="lnreader-debug-mode" content="${Boolean(this.enableDebug)}">`,
+      '<meta id="no-cache-marker"/>',
+      '<meta id="no-prefetch-marker"/>',
+    ];
+
+    if (opts.embedOnly && opts.iframe) {
+      return [
+        ...base,
+        '<meta name="lnreader-video-mode" content="direct">',
+        '<meta name="lnreader-video-type" content="iframe">',
+        `<meta name="lnreader-video-url" content="${esc(opts.iframe)}">`,
+      ].join('\n');
+    }
+
     const attrs: string[] = ['id="avs-player-container"'];
     if (opts.bannerUrl) attrs.push(`data-banner="${esc(opts.bannerUrl)}"`);
     if (opts.m3u8) attrs.push(`data-m3u8="${esc(opts.m3u8)}"`);
@@ -455,18 +475,12 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
     if (opts.referer) attrs.push(`data-referer="${esc(opts.referer)}"`);
     if (opts.site) attrs.push(`data-site="${esc(opts.site)}"`);
     attrs.push(`data-mode="${opts.embedOnly ? 'embed' : this.playMode}"`);
-    attrs.push(`data-player-type="${this.playerType}"`);
-    if (this.enableDebug) attrs.push('data-debug="1"');
+    // attrs.push(`data-player-type="${this.playerType}"`);
 
     return [
-      `<div ${attrs.join(' ')}`,
-      '  style="width: 100%; aspect-ratio: 16/9; background: #000;">',
-      '  <div id="avs-player-inner" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">',
-      '    <p style="color:#fff;font-family:sans-serif;">Đang tải video...</p>',
-      '  </div>',
-      '</div>',
-      '<p id="avs-mode-label" style="color:#888;font-size:12px;font-family:sans-serif;text-align:center;margin:4px 0;"></p>',
-      '<meta id="no-cache-marker"/><meta id="no-prefetch-marker"/>',
+      ...base,
+      '<meta name="lnreader-video-mode" content="lazy">',
+      `<div ${attrs.join(' ')} style="display:none;"></div>`,
     ].join('\n');
   }
 

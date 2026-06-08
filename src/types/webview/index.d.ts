@@ -22,6 +22,7 @@ declare global {
     };
 
     reader: ReaderAPI;
+    LNReaderPlayer: LNReaderPlayerAPI | undefined;
   }
 
   interface VanState<T> {
@@ -87,6 +88,28 @@ declare global {
     refresh(): void;
 
     fetch(url: string, init?: RequestInit): Promise<Response>;
+  }
+  interface LNReaderPlayerAPI {
+    container: HTMLElement | null;
+    videoElement: HTMLVideoElement | null;
+    iframeElement: HTMLIFrameElement | null;
+    hlsInstance: any | null;
+    debugOverlay: HTMLElement | null;
+    loadingOverlay: HTMLElement | null;
+
+    hasSeekedInitial: boolean;
+    lastSaveTime: number;
+    isDebugMode: boolean;
+
+    init(): void;
+    log(msg: string): void;
+    destroyCurrentMedia(): void;
+    attachEventListeners(video: HTMLVideoElement): void;
+    generateHTML5Video(): HTMLVideoElement;
+    generateHTMLVideo(metaPlayerType?: string): HTMLVideoElement;
+    playDirect(url: string): void;
+    playHls(url: string, customHlsConfig?: Record<string, any>): void;
+    playIframe(url: string): void;
   }
 }
 
