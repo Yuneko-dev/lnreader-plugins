@@ -1,9 +1,11 @@
-import { fetchApi } from '@libs/fetch';
+import { fetchApi, fetchText } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { Filters, FilterTypes } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
-import { encodeHtmlEntities } from '@libs/utils';
+import { encodeHtmlEntities, Buffer, NodeCrypto } from '@libs/utils';
+import { storage } from '@libs/storage';
+import { load } from 'cheerio';
 
 const SITE = 'https://phim.nguonc.com';
 const API_BASE = SITE + '/api';
@@ -13,7 +15,8 @@ class NguonCPlugin implements Plugin.PluginBase {
   name = '🎞 NguonC';
   icon = 'src/vi/nguonc/icon.png';
   site = SITE;
-  version = '1.0.7';
+  version = '1.0.8';
+  customJS = 'src/vi/nguonc/player.js';
 
   filters = {
     category: {
@@ -103,6 +106,18 @@ class NguonCPlugin implements Plugin.PluginBase {
       ],
     },
   } satisfies Filters;
+
+  pluginSettings: Plugin.PluginSettings = {
+    enableEmbed: {
+      value: false,
+      label: 'Bật embed',
+      type: 'Switch',
+    },
+  };
+
+  get enableEmbed() {
+    return storage.get('enableEmbed') as boolean;
+  }
 
   // ---------- helpers ----------
 
@@ -255,7 +270,7 @@ class NguonCPlugin implements Plugin.PluginBase {
         for (const ep of server.items || []) {
           if (ep.slug === epSlug) {
             return this.buildPlayerHtml({
-              m3u8: ep.m3u8 || '',
+              m3u8: ep.m3u8,
               embed: ep.embed || '',
             });
           }
@@ -265,27 +280,49 @@ class NguonCPlugin implements Plugin.PluginBase {
     throw new Error('Không tìm thấy dữ liệu tập phim này');
   }
 
+  async getM3u8DataFromEmbed(url: string) {
+    const html = await fetchText(url);
+    const $ = load(html);
+    const div = $('#player');
+    const obf = JSON.parse(Buffer.from(div.attr('data-obf')!, "base64").toString()) as {
+      sUb: string,
+      hD: string,
+      kX: string,
+    };
+    return obf;
+  }
+
   // ---------- buildPlayerHtml ----------
 
-  private buildPlayerHtml(opts: { m3u8?: string; embed?: string }): string {
+  private async buildPlayerHtml(opts: { m3u8?: string; embed?: string }): Promise<string> {
     const metas: string[] = [
       '<meta name="lnreader-chapter-type" content="video">',
-      '<meta name="lnreader-video-mode" content="direct">',
       '<meta name="lnreader-debug-mode" content="false">',
       '<meta id="no-cache-marker"/>',
       '<meta id="no-prefetch-marker"/>',
     ];
 
-    if (opts.embed) {
-      metas.push('<meta name="lnreader-video-type" content="iframe">');
+    if (this.enableEmbed) {
+      metas.push('<meta name="lnreader-video-mode" content="direct">', '<meta name="lnreader-video-type" content="iframe">');
       metas.push(
         `<meta name="lnreader-video-url" content="${encodeHtmlEntities(opts.embed)}">`,
       );
-    } else if (opts.m3u8) {
-      metas.push('<meta name="lnreader-video-type" content="m3u8">');
+    } else if (opts.m3u8 && false) {
+      // không phải m3u8 của nguonc nên chưa rõ cách bypass
+      metas.push('<meta name="lnreader-video-mode" content="direct">', '<meta name="lnreader-video-type" content="m3u8">');
       metas.push(
         `<meta name="lnreader-video-url" content="${encodeHtmlEntities(opts.m3u8)}">`,
       );
+    } else {
+      metas.push('<meta name="lnreader-video-mode" content="lazy">');
+      const attrs: string[] = ['id="nguonc-player-container"'];
+      attrs.push(`data-iframe="${encodeHtmlEntities(opts.embed)}"`);
+      // trying fetch iframe
+      const iframeObf = await this.getM3u8DataFromEmbed(opts.embed!);
+      attrs.push(`data-s="${encodeHtmlEntities(iframeObf?.sUb)}"`);
+      attrs.push(`data-h="${encodeHtmlEntities(iframeObf?.hD)}"`);
+      attrs.push(`data-k="${encodeHtmlEntities(iframeObf?.kX)}"`);
+      metas.push(`<div ${attrs.join(' ')} style="display:none;"></div>`);
     }
 
     return metas.join('\n');
