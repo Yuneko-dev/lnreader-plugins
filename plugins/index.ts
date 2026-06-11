@@ -18,15 +18,16 @@ import p_15 from '@plugins/vietnamese/MotTruyen';
 import p_16 from '@plugins/vietnamese/NguonC';
 import p_17 from '@plugins/vietnamese/OPhim';
 import p_18 from '@plugins/vietnamese/PhimFun';
-import p_19 from '@plugins/vietnamese/SangTacViet';
-import p_20 from '@plugins/vietnamese/TieuThuyetMang';
-import p_21 from '@plugins/vietnamese/TomatoMTL';
-import p_22 from '@plugins/vietnamese/TruyenCV';
-import p_23 from '@plugins/vietnamese/TruyenFull';
-import p_24 from '@plugins/vietnamese/Valvrareteam';
-import p_25 from '@plugins/vietnamese/WanwanSekai';
-import p_26 from '@plugins/vietnamese/YeuAnime';
-import p_27 from '@plugins/vietnamese/ZumiNovel';
+import p_19 from '@plugins/vietnamese/Playm3u';
+import p_20 from '@plugins/vietnamese/SangTacViet';
+import p_21 from '@plugins/vietnamese/TieuThuyetMang';
+import p_22 from '@plugins/vietnamese/TomatoMTL';
+import p_23 from '@plugins/vietnamese/TruyenCV';
+import p_24 from '@plugins/vietnamese/TruyenFull';
+import p_25 from '@plugins/vietnamese/Valvrareteam';
+import p_26 from '@plugins/vietnamese/WanwanSekai';
+import p_27 from '@plugins/vietnamese/YeuAnime';
+import p_28 from '@plugins/vietnamese/ZumiNovel';
 
 const PLUGINS: Plugin.PluginBase[] = [
   p_0,
@@ -57,5 +58,6 @@ const PLUGINS: Plugin.PluginBase[] = [
   p_25,
   p_26,
   p_27,
+  p_28,
 ];
 export default PLUGINS;
