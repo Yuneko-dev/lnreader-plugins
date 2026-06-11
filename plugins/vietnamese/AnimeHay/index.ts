@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { fetchText } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { load as loadCheerio } from 'cheerio';

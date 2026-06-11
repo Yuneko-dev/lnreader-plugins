@@ -284,17 +284,22 @@ class NguonCPlugin implements Plugin.PluginBase {
     const html = await fetchText(url);
     const $ = load(html);
     const div = $('#player');
-    const obf = JSON.parse(Buffer.from(div.attr('data-obf')!, "base64").toString()) as {
-      sUb: string,
-      hD: string,
-      kX: string,
+    const obf = JSON.parse(
+      Buffer.from(div.attr('data-obf')!, 'base64').toString(),
+    ) as {
+      sUb: string;
+      hD: string;
+      kX: string;
     };
     return obf;
   }
 
   // ---------- buildPlayerHtml ----------
 
-  private async buildPlayerHtml(opts: { m3u8?: string; embed?: string }): Promise<string> {
+  private async buildPlayerHtml(opts: {
+    m3u8?: string;
+    embed?: string;
+  }): Promise<string> {
     const metas: string[] = [
       '<meta name="lnreader-chapter-type" content="video">',
       '<meta name="lnreader-debug-mode" content="false">',
@@ -303,17 +308,23 @@ class NguonCPlugin implements Plugin.PluginBase {
     ];
 
     if (this.enableEmbed) {
-      metas.push('<meta name="lnreader-video-mode" content="direct">', '<meta name="lnreader-video-type" content="iframe">');
+      metas.push(
+        '<meta name="lnreader-video-mode" content="direct">',
+        '<meta name="lnreader-video-type" content="iframe">',
+      );
       metas.push(
         `<meta name="lnreader-video-url" content="${encodeHtmlEntities(opts.embed)}">`,
       );
-    } else if (opts.m3u8 && false) {
+    } else {
+      /*
+    if (opts.m3u8) {
       // không phải m3u8 của nguonc nên chưa rõ cách bypass
       metas.push('<meta name="lnreader-video-mode" content="direct">', '<meta name="lnreader-video-type" content="m3u8">');
       metas.push(
         `<meta name="lnreader-video-url" content="${encodeHtmlEntities(opts.m3u8)}">`,
       );
     } else {
+    */
       metas.push('<meta name="lnreader-video-mode" content="lazy">');
       const attrs: string[] = ['id="nguonc-player-container"'];
       attrs.push(`data-iframe="${encodeHtmlEntities(opts.embed)}"`);

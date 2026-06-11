@@ -6,40 +6,37 @@ import { FilterTypes, Filters } from '@libs/filterInputs';
 import { storage } from '@libs/storage';
 import { bytesToUtf8, Buffer } from '@libs/utils';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
-import { Parser } from "htmlparser2";
+import { Parser } from 'htmlparser2';
 
 function htmlToSimpleMarkdown(html: string) {
-  let markdown = "";
-  
+  let markdown = '';
+
   let inAnchor = false;
-  let anchorText = "";
-  let anchorHref = "";
+  let anchorText = '';
+  let anchorHref = '';
 
   const parser = new Parser({
     onopentag(name, attributes) {
-      if (name === "a") {
+      if (name === 'a') {
         inAnchor = true;
-        anchorHref = attributes.href || ""; 
-        anchorText = "";
-      } 
-      else if (name === "img") {
-        const alt = attributes.alt || "image";
-        const src = attributes.src || "";
+        anchorHref = attributes.href || '';
+        anchorText = '';
+      } else if (name === 'img') {
+        const alt = attributes.alt || 'image';
+        const src = attributes.src || '';
         const imgMarkdown = `![${alt}](${src})`;
         if (inAnchor) {
           anchorText += imgMarkdown;
         } else {
           markdown += imgMarkdown;
         }
-      }
-      else if (name === "br") {
-        markdown += "\n";
-      } 
-      else if (name === "p" || name === "div") {
-        markdown += "\n\n";
+      } else if (name === 'br') {
+        markdown += '\n';
+      } else if (name === 'p' || name === 'div') {
+        markdown += '\n\n';
       }
     },
-    
+
     ontext(text) {
       let cleanText = text.replace(/[\r\n\t ]+/g, ' ');
 
@@ -50,24 +47,23 @@ function htmlToSimpleMarkdown(html: string) {
           return;
         }
         if (markdown.endsWith('\n') || markdown === '') {
-          cleanText = cleanText.trimStart(); 
+          cleanText = cleanText.trimStart();
         }
-        
+
         markdown += cleanText;
       }
     },
-    
+
     onclosetag(name) {
-      if (name === "a") {
+      if (name === 'a') {
         markdown += `[${anchorText.trim()}](${anchorHref})`;
         inAnchor = false;
-        anchorText = "";
-        anchorHref = "";
-      } 
-      else if (name === "p" || name === "div") {
-        markdown += "\n\n";
+        anchorText = '';
+        anchorHref = '';
+      } else if (name === 'p' || name === 'div') {
+        markdown += '\n\n';
       }
-    }
+    },
   });
 
   parser.write(html);
@@ -317,7 +313,7 @@ class HakoPlugin implements Plugin.PluginBase {
 
     novel.name = $('.series-name').first().text().trim();
     const summary = htmlToSimpleMarkdown($('.summary-content').html() || '');
-    const prefixHeader = "✦";
+    const prefixHeader = '✦';
     const facts = $('.fact-item')
       .map((_, el) => {
         const factName = $(el)
@@ -327,22 +323,30 @@ class HakoPlugin implements Plugin.PluginBase {
           .trim()
           .replace(/:$/, '');
 
-        const factValue = htmlToSimpleMarkdown($(el).find('.fact-value').html() || '');
-        return `${prefixHeader} ${factName}\n${factValue}`
+        const factValue = htmlToSimpleMarkdown(
+          $(el).find('.fact-value').html() || '',
+        );
+        return `${prefixHeader} ${factName}\n${factValue}`;
       })
       .get();
     const note = $('.series-note').first();
     const result = note.length
       ? {
-        title: note.find('header .sect-title').first().text().trim(),
-        content: note.find('main').first().html()?.trim() ?? '',
-      }
+          title: note.find('header .sect-title').first().text().trim(),
+          content: note.find('main').first().html()?.trim() ?? '',
+        }
       : null;
 
     novel.summary = [
       ...(facts.length ? facts : []),
-      `${prefixHeader} Tóm tắt`, summary,
-      ...(result ? [`${prefixHeader} ${result.title}`, htmlToSimpleMarkdown(result.content).trim()] : [])
+      `${prefixHeader} Tóm tắt`,
+      summary,
+      ...(result
+        ? [
+            `${prefixHeader} ${result.title}`,
+            htmlToSimpleMarkdown(result.content).trim(),
+          ]
+        : []),
     ].join('\n');
 
     const coverEl = $('.series-cover .img-in-ratio').first();
@@ -696,7 +700,7 @@ class HakoPlugin implements Plugin.PluginBase {
         { label: 'Đang tiến hành', value: 'dangtienhanh' },
         { label: 'Tạm ngưng', value: 'tamngung' },
         { label: 'Đã hoàn thành', value: 'hoanthanh' },
-        { label: 'Truyện chưa duyệt', value: 'chuaduyet' }
+        { label: 'Truyện chưa duyệt', value: 'chuaduyet' },
       ],
     },
     sort: {

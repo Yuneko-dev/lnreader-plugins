@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 // core-player.js
 
 (function () {

@@ -60,7 +60,9 @@ class YeuAnimePlugin implements Plugin.PluginBase {
       try {
         const jsonStr = text.substring(start, end);
         return JSON.parse(jsonStr);
-      } catch (e) {}
+      } catch (e) {
+        //
+      }
     }
     return null;
   }
@@ -97,7 +99,9 @@ class YeuAnimePlugin implements Plugin.PluginBase {
           } else if (parsed && typeof parsed === 'object') {
             resultList.push(parsed);
           }
-        } catch (e) {}
+        } catch (e) {
+          //
+        }
       }
       start += searchStr.length;
     }
@@ -126,8 +130,8 @@ class YeuAnimePlugin implements Plugin.PluginBase {
         const path = `/phim/${m.slug}`;
         if (!addedLinks.has(path)) {
           addedLinks.add(path);
-          let tag = m.episode_current || m.display_status || m.status || '';
-          let mName = m.name
+          const tag = m.episode_current || m.display_status || m.status || '';
+          const mName = m.name
             .toString()
             .trim()
             .replace(/^.*?Xem chi tiết phim\s+/i, '')
@@ -206,8 +210,8 @@ class YeuAnimePlugin implements Plugin.PluginBase {
         const path = `/phim/${m.slug}`;
         if (!addedLinks.has(path)) {
           addedLinks.add(path);
-          let tag = m.episode_current || m.display_status || m.status || '';
-          let mName = m.name
+          const tag = m.episode_current || m.display_status || m.status || '';
+          const mName = m.name
             .toString()
             .trim()
             .replace(/^.*?Xem chi tiết phim\s+/i, '')
@@ -286,7 +290,7 @@ class YeuAnimePlugin implements Plugin.PluginBase {
     if (cover && !cover.startsWith('http')) cover = this.site + cover;
 
     let summary = movie.description || '';
-    let author =
+    const author =
       movie.director && movie.director !== 'Đang cập nhật'
         ? movie.director
         : 'Yêu Anime';

@@ -29,7 +29,7 @@ type PlaylistItem = {
   };
   timeshift: string;
   lang: string;
-}
+};
 
 const iptvPlaylistParser = {
   parse: (content: string) => {
@@ -61,7 +61,8 @@ const iptvPlaylistParser = {
     };
 
     const lines = content.split(/\r?\n/);
-    if (!lines[0] || !/^#EXTM3U/.test(lines[0])) throw new Error('Playlist is not valid');
+    if (!lines[0] || !/^#EXTM3U/.test(lines[0]))
+      throw new Error('Playlist is not valid');
 
     const items: PlaylistItem[] = [];
     let currentItem: Partial<PlaylistItem> | null = null;
@@ -79,28 +80,30 @@ const iptvPlaylistParser = {
             logo: getAttribute(line, 'tvg-logo'),
             url: getAttribute(line, 'tvg-url'),
             rec: getAttribute(line, 'tvg-rec'),
-            shift: getAttribute(line, 'tvg-shift')
+            shift: getAttribute(line, 'tvg-shift'),
           },
           group: {
-            title: getAttribute(line, 'group-title')
+            title: getAttribute(line, 'group-title'),
           },
           http: {
             referrer: getAttribute(line, 'referrer'),
-            'user-agent': getAttribute(line, 'user-agent')
+            'user-agent': getAttribute(line, 'user-agent'),
           },
           url: '',
           catchup: {
             type: getAttribute(line, 'catchup'),
             days: getAttribute(line, 'catchup-days'),
-            source: getAttribute(line, 'catchup-source')
+            source: getAttribute(line, 'catchup-source'),
           },
           timeshift: getAttribute(line, 'timeshift'),
-          lang: getAttribute(line, 'lang')
+          lang: getAttribute(line, 'lang'),
         };
       } else if (line.startsWith('#EXTVLCOPT:')) {
         if (!currentItem?.http) continue;
-        currentItem.http.referrer = getOption(line, 'http-referrer') || currentItem.http.referrer;
-        currentItem.http['user-agent'] = getOption(line, 'http-user-agent') || currentItem.http['user-agent'];
+        currentItem.http.referrer =
+          getOption(line, 'http-referrer') || currentItem.http.referrer;
+        currentItem.http['user-agent'] =
+          getOption(line, 'http-user-agent') || currentItem.http['user-agent'];
       } else if (line.startsWith('#EXTGRP:')) {
         if (!currentItem?.group) continue;
         currentItem.group.title = getValue(line) || currentItem.group.title;
@@ -109,15 +112,17 @@ const iptvPlaylistParser = {
       } else {
         if (!currentItem?.http) continue;
         currentItem.url = line;
-        currentItem.http['user-agent'] = getParameter(line, 'user-agent') || currentItem.http['user-agent'];
-        currentItem.http.referrer = getParameter(line, 'referer') || currentItem.http.referrer;
+        currentItem.http['user-agent'] =
+          getParameter(line, 'user-agent') || currentItem.http['user-agent'];
+        currentItem.http.referrer =
+          getParameter(line, 'referer') || currentItem.http.referrer;
         items.push(currentItem as PlaylistItem);
         currentItem = null;
       }
     }
 
     return { items };
-  }
+  },
 };
 
 class Playm3uPlugin implements Plugin.PluginBase {
@@ -136,7 +141,9 @@ class Playm3uPlugin implements Plugin.PluginBase {
   };
 
   get m3uUrl(): string {
-    return (storage.get('m3uUrl') as string) || this.pluginSettings.m3uUrl.value;
+    return (
+      (storage.get('m3uUrl') as string) || this.pluginSettings.m3uUrl.value
+    );
   }
 
   async popularNovels(pageNo: number): Promise<Plugin.NovelItem[]> {
@@ -145,7 +152,7 @@ class Playm3uPlugin implements Plugin.PluginBase {
 
     const playlist = iptvPlaylistParser.parse(text);
 
-    return playlist.items.map((item) => {
+    return playlist.items.map(item => {
       const params = new URLSearchParams();
       params.set('url', item.url);
       params.set('name', item.name);
@@ -160,10 +167,15 @@ class Playm3uPlugin implements Plugin.PluginBase {
     });
   }
 
-  async searchNovels(searchTerm: string, pageNo: number): Promise<Plugin.NovelItem[]> {
+  async searchNovels(
+    searchTerm: string,
+    pageNo: number,
+  ): Promise<Plugin.NovelItem[]> {
     if (pageNo > 1) return [];
     const novels = await this.popularNovels(1);
-    return novels.filter(n => n.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    return novels.filter(n =>
+      n.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
   }
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
@@ -176,11 +188,13 @@ class Playm3uPlugin implements Plugin.PluginBase {
       name,
       cover,
       status: NovelStatus.Ongoing,
-      chapters: [{
-        name,
-        path: novelPath,
-        chapterNumber: 1,
-      }]
+      chapters: [
+        {
+          name,
+          path: novelPath,
+          chapterNumber: 1,
+        },
+      ],
     };
   }
 
