@@ -9,26 +9,24 @@ import p_6 from '@plugins/vietnamese/AnimeVsub';
 import p_7 from '@plugins/vietnamese/BaoMoi';
 import p_8 from '@plugins/vietnamese/DocTruyenLN';
 import p_9 from '@plugins/vietnamese/HentaiZ';
-import p_10 from '@plugins/vietnamese/JukaNovel';
-import p_11 from '@plugins/vietnamese/KKPhim';
-import p_12 from '@plugins/vietnamese/LNHako';
-import p_13 from '@plugins/vietnamese/LNKuro';
-import p_14 from '@plugins/vietnamese/Luvevaland';
-import p_15 from '@plugins/vietnamese/MeTruyenCV';
-import p_16 from '@plugins/vietnamese/Motchill';
-import p_17 from '@plugins/vietnamese/MotTruyen';
-import p_18 from '@plugins/vietnamese/NguonC';
-import p_19 from '@plugins/vietnamese/OPhim';
-import p_20 from '@plugins/vietnamese/PhimFun';
-import p_21 from '@plugins/vietnamese/SangTacViet';
-import p_22 from '@plugins/vietnamese/TieuThuyetMang';
-import p_23 from '@plugins/vietnamese/TomatoMTL';
-import p_24 from '@plugins/vietnamese/TruyenCV';
-import p_25 from '@plugins/vietnamese/TruyenFull';
-import p_26 from '@plugins/vietnamese/Valvrareteam';
-import p_27 from '@plugins/vietnamese/WanwanSekai';
-import p_28 from '@plugins/vietnamese/YeuAnime';
-import p_29 from '@plugins/vietnamese/ZumiNovel';
+import p_10 from '@plugins/vietnamese/KKPhim';
+import p_11 from '@plugins/vietnamese/LNHako';
+import p_12 from '@plugins/vietnamese/LNKuro';
+import p_13 from '@plugins/vietnamese/Luvevaland';
+import p_14 from '@plugins/vietnamese/MeTruyenCV';
+import p_15 from '@plugins/vietnamese/Motchill';
+import p_16 from '@plugins/vietnamese/MotTruyen';
+import p_17 from '@plugins/vietnamese/NguonC';
+import p_18 from '@plugins/vietnamese/OPhim';
+import p_19 from '@plugins/vietnamese/PhimFun';
+import p_20 from '@plugins/vietnamese/SangTacViet';
+import p_21 from '@plugins/vietnamese/TieuThuyetMang';
+import p_22 from '@plugins/vietnamese/TomatoMTL';
+import p_23 from '@plugins/vietnamese/TruyenCV';
+import p_24 from '@plugins/vietnamese/TruyenFull';
+import p_25 from '@plugins/vietnamese/Valvrareteam';
+import p_26 from '@plugins/vietnamese/YeuAnime';
+import p_27 from '@plugins/vietnamese/ZumiNovel';
 
 const PLUGINS: Plugin.PluginBase[] = [
   p_0,
@@ -59,7 +57,5 @@ const PLUGINS: Plugin.PluginBase[] = [
   p_25,
   p_26,
   p_27,
-  p_28,
-  p_29,
 ];
 export default PLUGINS;
