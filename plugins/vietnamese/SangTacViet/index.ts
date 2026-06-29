@@ -11,6 +11,7 @@ import { decodeHtmlEntities, encodeHtmlEntities } from '@libs/utils';
 import filters from './filters';
 import { STVChapterError } from './STVError';
 import { HOST_PATTERNS, ABT_HOSTS, looksLikeExternalUrl } from './ExternalURL';
+import { applyNameEngine } from './nameEngine';
 
 const SITE = 'https://sangtacviet.app';
 
@@ -99,7 +100,11 @@ function decodeGlyphs(text: string): string {
 }
 
 // ── Content normalization  ─────────────────
-function normalizeChapterHtml(host: string, raw: string): string {
+function normalizeChapterHtml(
+  host: string,
+  raw: string,
+  applyName?: boolean,
+): string {
   let text = raw || '';
   if (!text) return '';
   const h = host.toLowerCase();
@@ -124,6 +129,10 @@ function normalizeChapterHtml(host: string, raw: string): string {
     $('header, footer').remove();
     $('*').removeAttr('idx');
   }
+
+  // Detect & replace person names on the raw Hán tokens before they are
+  // flattened into plain <p> text.
+  if (applyName) applyNameEngine($);
 
   $('br').replaceWith('\n');
 
@@ -263,6 +272,11 @@ class SangTacVietPlugin implements Plugin.PluginBase {
         'Tự động thử lại khi tải chương thất bại (Tối đa 10 lần, cách nhau 1 giây)',
       value: false,
     },
+    autoName: {
+      type: 'Switch',
+      label: 'Tự động nhận diện & thay tên riêng (theo bảng họ + tần suất)',
+      value: false,
+    },
   };
 
   constructor() {
@@ -292,6 +306,10 @@ class SangTacVietPlugin implements Plugin.PluginBase {
 
   get removeSystemMessage() {
     return storage.get('removeSystemMessage') as boolean;
+  }
+
+  get autoName() {
+    return storage.get('autoName') as boolean;
   }
 
   async applyTranslationCookies(origin: string): Promise<void> {
@@ -476,6 +494,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       chapUrl.searchParams.set('h', bookHost);
       chapUrl.searchParams.set('bookid', bookId);
       chapUrl.searchParams.set('sajax', 'getchapterlist');
+      chapUrl.searchParams.set('force', 'true');
       const chapRes = await fetchApi(chapUrl.toString(), { headers });
       const chapJson = (await chapRes.json()) as {
         code: number;
@@ -695,7 +714,8 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       const rawData = this.removeSystemMessageFromChapterContent(
         String(data.data),
       );
-      const content = normalizeChapterHtml(host, rawData);
+      const applyName = this.autoName && this.translateEnabled;
+      const content = normalizeChapterHtml(host, rawData, applyName);
       const title = data.chaptername?.trim();
       return (title ? `<h2>${title}</h2>` : '') + wrapWithParagraphs(content);
     } else {
