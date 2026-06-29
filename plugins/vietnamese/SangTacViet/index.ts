@@ -4,11 +4,13 @@ import { load as parseHTML } from 'cheerio';
 import { fetchApi, fetchText } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
-import { FilterTypes, Filters } from '@libs/filterInputs';
 import { defaultCover } from '@libs/defaultCover';
 import { storage } from '@libs/storage';
 import { get, set, setFromResponse, removeSessionCookies } from '@libs/cookie';
 import { decodeHtmlEntities, encodeHtmlEntities } from '@libs/utils';
+import filters from './filters';
+import { STVChapterError } from './STVError';
+import { HOST_PATTERNS, ABT_HOSTS, looksLikeExternalUrl } from './ExternalURL';
 
 const SITE = 'https://sangtacviet.app';
 
@@ -17,161 +19,11 @@ const GH_UPDATE =
 
 const DOMAIN_URLS = [
   'https://sangtacviet.app',
+  'https://sangtacviet.xyz',
   'https://sangtacviet.pro',
   'https://dns1.stv-appdomain-00000001.org',
 ];
 const DOMAINS = Object.fromEntries(DOMAIN_URLS.map(u => [new URL(u).host, u]));
-
-// ── External-URL
-const HOST_PATTERNS: Record<string, string[]> = {
-  uukanshu: [
-    'uukanshu\\.(?:com|net)/b/(\\d+)/(\\d+)?(.html)?',
-    'sj\\.uukanshu\\.(?:com|net)//?book(?:_amp)?\\.aspx\\?id=(\\d+)',
-    'sj\\.uukanshu\\.(?:com|net)//?read\\.aspx?tid=(\\d+)&sid=(\\d+)',
-    'zhaoshuyuan\\.(?:com|net)/b/(\\d+)/(\\d+)?(.html)?',
-    'zhaoshuyuan\\.(?:com|net)//?book(?:_amp)?\\.aspx\\?id=(\\d+)',
-    'zhaoshuyuan\\.(?:com|net)//?read\\.aspx?tid=(\\d+)&sid=(\\d+)',
-  ],
-  '69shu': [
-    '69shuba\\.com/(?:txt|book/)?(\\d+)/?(\\d+)?',
-    '69shuba\\.cx/(?:txt|book/)?(\\d+)/?(\\d+)?',
-    '69xinshu\\.com/(?:txt|book/)?(\\d+)/?(\\d+)?',
-    '69shu\\.pro/(?:txt|book/)?(\\d+)/?(\\d+)?',
-    '69shu\\.[a-z]{3,4}/(?:txt|book/)?(\\d+)/?(\\d+)?',
-    '69shuba\\.[a-z]{3,4}/(?:txt|book/)?(\\d+)/?(\\d+)?',
-  ],
-  '69shuorg': ['69shu\\.org/book[_/](\\d+)/(\\d+)?'],
-  xiaoqiangwx: ['xiaoqiangwx\\.org/(?:\\d+|book)/(\\d+)/?(\\d+)?(.html)?'],
-  cuiweijux: ['cuiweijux\\.com/files/article/html/\\d+/(\\d+)/(\\d+)?(.html)?'],
-  biquge: [
-    'biquge\\.com\\.cn/book/(\\d+)/(\\d+)?(.html)?',
-    'sobiquge\\.com/book/(\\d+)/',
-    '81zw\\.org/books/(\\d+)/',
-  ],
-  trxs: ['trxs\\.cc/tongren/(\\d+)/?(\\d+)?(.html)?'],
-  ikshu8: ['ikshu8\\.com/book/(\\d+)/?(\\d+)?(.html)?'],
-  shulinw: [
-    'shulinw\\.com/(?:shu/|yuedu/|book/|\\d+/|modules/article/articleinfo\\.php\\?id=)(\\d+)(?:/)?(\\d*)(.html)?',
-  ],
-  wuxia1: [
-    'wuxia1\\.com/(?:shu/|yuedu/|book/|\\d+/|modules/article/articleinfo\\.php\\?id=)(\\d+)(?:/)?(\\d*)(.html)?',
-  ],
-  shu05: ['shu05\\.com/\\d+[/_](\\d+)/(\\d*)(.html)?'],
-  kuhu168: ['kuhu168\\.com/\\d+[/_](\\d+)/(\\d*)(.html)?'],
-  '2kxs': ['2kxs\\.org/\\d+[/_](\\d+)/(\\d*)(.html)?'],
-  yikanxiaoshuo: ['yikanxiaoshuo\\.com/\\d+[/_](\\d+)/(\\d*)(.html)?'],
-  '8zwdu': ['8zwdu\\.com/\\d+[/_](\\d+)/(\\d*)(.html)?'],
-  kanmaoxian: ['kanmaoxian\\.com/(?:book|\\d+)/(\\d+)/?(\\d*)(.html)?'],
-  kayegenet: ['kayege\\.net/(?:book|\\d+)[/_](\\d+)/?(\\d*)(.html)?'],
-  '4gxsw': ['4gxsw\\.com/(?:book|html/\\d+)/(\\d+)/?(\\d*)(.html)?'],
-  qinqinxsw: ['qinqinxsw\\.com/(?:book|\\d+)[/_](\\d+)/?(\\d*)(.html)?'],
-  read8: ['read8\\.net/(?:dushu)/(\\d+)/(\\d*)(.html)?'],
-  ciweimao: ['ciweimao\\.com/book/(\\d+)'],
-  wkkshu: ['wkkshu\\.com/(?:xs/\\d+/|\\d+_)(\\d+)/(\\d*)(.html)?'],
-  '168kanshu': ['168kanshu\\.com/(?:xs/\\d+/|\\d+_)(\\d+)/(\\d*)(.html)?'],
-  wanbentxt: ['wanbentxt\\.com/(\\d+)/([\\d_]*)(.html)?'],
-  '38kanshu': ['mijiashe\\.com/(\\d+)/([\\d_]*)(.html)?'],
-  duanqingsi: ['duanqingsi\\.com/(\\d+)/([\\d_]*)(.html)?'],
-  faloo: [
-    '\\.faloo\\.com/[pfboklithtm]+/(\\d+)(?:\\.html|/(\\d+)\\.html)?',
-    '\\.faloo\\.com/(\\d+)\\.html',
-    '\\.faloo\\.com/(\\d+)_(\\d+)\\.html',
-  ],
-  qiuxiaoshuo: ['qiuxiaoshuo\\.com/(?:book|read)[/-](\\d+)[/-]?(\\d*)'],
-  dibaqu123: ['dibaqu123\\.com/\\d+/(\\d+)/?(\\d*)(.html)?'],
-  jiacuan: ['jiacuan\\.com/\\d+/(\\d+)/(\\d*)(.html)?'],
-  shubaow: ['shubaow\\.net/\\d+[_/](\\d+)/(\\d*)(.html)?'],
-  biqugeinfo: ['biquge\\.info/\\d+_(\\d+)/(\\d*)(.html)?'],
-  shumilou: ['shumilou\\.net/\\d+/(\\d+)/(\\d*)(.html)?'],
-  xbiquge: ['xbiquge\\.cc/book/(\\d+)/(\\d*)(.html)?'],
-  paoshu8: ['paoshu8\\.com/\\d+_(\\d+)/(\\d*)(.html)?'],
-  duokan8: ['duokan8\\.com/\\d+_(\\d+)/(\\d*)(.html)?'],
-  biqugecom: ['biquge\\.com/\\d+_(\\d+)/(\\d*)(.html)?'],
-  hetushu: ['hetushu\\.com/book/(\\d+)/(\\d*)(.html)?'],
-  nofff: ['nofff\\.com/(\\d+)/(\\d*)/?'],
-  uuxs: ['uuxs\\.tw/ls/\\d+_(\\d+)/(\\d*)(.html)?'],
-  ranwenla: ['ranwen\\.la/files/article/\\d+/(\\d+)/(\\d*)(.html)?'],
-  '66wx': ['66wx\\.com/(\\d+)_\\d+/read(\\d*)(.html)?'],
-  biqugexs: ['biqugexs\\.com/\\d+_(\\d+)/(\\d*)(.html)?'],
-  '230book': ['230book\\.[comnet]{3}/book/(\\d+)/(\\d*)(.html)?'],
-  biqubu: ['biqubu\\.com/book_(\\d+)/(\\d*)(.html)?'],
-  '521danmei': [
-    '521danmei\\.org/read/(\\d+)/(\\d*)/?',
-    '521danmei\\.org/book/(\\d+)\\.html',
-  ],
-  bxwxorg: [
-    'bxwxorg\\.com/read/(\\d+)/(\\d*)(.html)?',
-    'bxwxorg\\.com/book/(\\d+)\\.html',
-  ],
-  qidian: ['qidian\\.com/(?:book|info)/(\\d+)'],
-  zwdu: ['zwdu\\.com/book/(\\d+)/(\\d*)(.html)?'],
-  zongheng: [
-    'book\\.zongheng\\.com/chapter/(\\d+)/(\\d*)(.html)?',
-    'book\\.zongheng\\.com/book/(\\d+)(?:\\.html)?',
-  ],
-  biqugese: [
-    'biquge\\.se/(\\d+)/(\\d*)(.html)?',
-    'biqugse\\.com/(\\d+)/(\\d*)(.html)?',
-  ],
-  qiushubang: ['qiushubang\\.com/(\\d+)/(\\d*)(.html)?'],
-  xinshuhaige: ['xinshuhaige\\.com/(\\d+)/(\\d*)(.html)?'],
-  oldtimescc: ['oldtimescc\\.cc/go/(\\d+)/(\\d*)(.html)?'],
-  wuwuxs: ['wuwuxs\\.com/\\d+_(\\d+)/(\\d*)(.html)?'],
-  hs313: ['hs313\\.net/book/(\\d+)/(\\d*)(.html)?'],
-  shuchong: ['shuchong\\.info/chapter/(\\d+)/(\\d*)(.html)?'],
-  shucw: ['shucw\\.com/html/\\d+/(\\d+)/(\\d*)(.html)?'],
-  shumizu: ['shumizu\\.com/\\d+/(\\d+)/(\\d*)(.html)?'],
-  tadu: ['tadu\\.com/book/(\\d+)/?(\\d*)/?'],
-  ptwxz: [
-    'ptwxz\\.com/bookinfo/\\d+/(\\d+)\\.html',
-    'ptwxz\\.com/html/\\d+/(\\d+)/(\\d+)\\.html',
-    'ptwxz\\.com/html/\\d+/(\\d+)/',
-  ],
-  x81zw: ['x81zw\\.com/book/\\d+/(\\d+)/(\\d*)(.html)?'],
-  linovel: ['linovel\\.net/book/(\\d+)\\.html'],
-  wenku8: ['wenku8\\.net/novel/\\d+/(\\d+)/(\\d*)\\.htm'],
-  youyoukanshu: [
-    'youyoukanshu\\.com/book/(\\d+)\\.html',
-    'youyoukanshu\\.com/book/(\\d+)/(\\d*)(.html)?',
-  ],
-  biqubao: ['biqubao\\.com/book/(\\d+)/(\\d*)(.html)?'],
-  biqugele: ['biqugele\\.com/txt/(\\d+)/(\\d*)(.html)?'],
-  biqugebz: ['biquge\\.bz/(\\d+)/(\\d*)(.html)?'],
-  biquge5200: ['biquge5200\\.cc/\\d+_(\\d+)/(\\d*)(.html)?'],
-  sfacg: [
-    'sfacg\\.com/(?:Novel|b|i)/(\\d+)/?',
-    'sfacg\\.com/Novel/(\\d+)/MainIndex/',
-  ],
-  shubao45: ['shubao45\\.com/\\d+_(\\d+)/(\\d*)(.html)?'],
-  kujiang: ['kujiang\\.com/book/(\\d+)'],
-  yushubo: [
-    'yushubo\\.com/book_(\\d+)',
-    'yushubo\\.net/book_(\\d+)',
-    'yushugu\\.com/book_(\\d+)',
-    'yushugu\\.com/list_other_(\\d+)',
-    'yushugu\\.com/read_(\\d+)_(\\d+)\\.html',
-  ],
-  xklxsw: ['xklxsw\\.com/book/(\\d+)/'],
-  fanqie: ['fanqienovel\\.com/page/(\\d+)'],
-  xsbiquge: ['xsbiquge\\.net/\\d+_(\\d+)/(\\d*)(.html)?'],
-  jjwxc: [
-    'jjwxc\\.net//?onebook\\.php\\?novelid=(\\d+)',
-    'jjwxc\\.net//?book2/(\\d+)/?',
-  ],
-  qimao: ['qimao\\.com/shuku/(\\d+)/'],
-  ddxs: ['ddxs\\.com/([a-z0-9A-Z\\-_]+)/(\\d+)?'],
-  quanben5: ['quanben5\\.com/n/([a-z0-9A-Z\\-_]+)/'],
-  idejian: ['idejian\\.com/book/([0-9]+)/'],
-};
-
-// Hosts whose first capture is alphanumeric and must be resolved to a numeric
-// bookid via /index.php?sajax=tryaddabtrecord (mirrors `isAbtHost()`).
-const ABT_HOSTS = new Set(['ddxs', 'quanben5', 'colamanga']);
-
-function looksLikeExternalUrl(s: string): boolean {
-  const t = s.toLowerCase();
-  return t.startsWith('http://') || t.startsWith('https://');
-}
 
 function detectHostFromUrl(
   input: string,
@@ -365,84 +217,17 @@ function wrapWithParagraphs(rawText: string): string {
   return htmlResult;
 }
 
-class STVChapterError extends Error {
-  public errorCode: number;
-  public raw: any;
-  constructor(code: number, detail: any) {
-    super(
-      `${STVChapterError.getMessage(code)} (code ${code})\n` +
-        STVChapterError.stringifyJson(detail),
-    );
-    this.name = 'STVChapterError';
-    this.errorCode = code;
-    this.raw = detail;
-    Object.setPrototypeOf(this, STVChapterError.prototype);
-  }
-  get shouldStopRetry(): boolean {
-    return STVChapterError.checkStopCode(this.errorCode);
-  }
-  static checkStopCode(code: number) {
-    switch (code) {
-      case 0: // OK
-      case 1: // empty
-      case 12:
-      case 13:
-      case 15:
-      case 18:
-      case 19:
-      case 21:
-      case 101:
-        return true;
-      default:
-        return false;
-    }
-  }
-  static stringifyJson(data: any) {
-    try {
-      return JSON.stringify(data);
-    } catch {
-      return `${data}`;
-    }
-  }
-  static getMessage(code: number | string) {
-    code = code.toString();
-    switch (code) {
-      case '1':
-        return 'Chương không có nội dung.';
-      case '5':
-        return 'Lỗi không xác định.';
-      case '7':
-        return 'Bạn đang tải chương quá nhanh. Hãy thử lại sau vài giây.';
-      case '12':
-        return 'Bạn chưa mua chương ở sfacg. Đăng nhập để tiếp tục.';
-      case '13':
-        return 'Bạn chưa đăng nhập.';
-      case '15':
-        return 'Đang đặt location chuyển hướng.';
-      case '18':
-        return 'Yêu cầu chuyển hướng.';
-      case '19':
-        return 'Có lỗi không xác định. Yêu cầu chuyển hướng';
-      case '21':
-        return 'Bạn cần xác nhận captcha. Hãy thử lại sau vài giây.';
-      case '101':
-        return 'Truyện này không phải novel (type=manga)';
-      default:
-        return 'Unexpected response.';
-    }
-  }
-}
-
 class SangTacVietPlugin implements Plugin.PluginBase {
   id = 'sangtacviet';
   name = 'Sáng Tác Việt';
   icon = 'src/vi/sangtacviet/icon.png';
   customJS = 'src/vi/sangtacviet/custom.js';
+  filters = filters;
 
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.26';
+  version = '1.0.27';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -1007,132 +792,6 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   resolveUrl(path: string, isNovel?: boolean): string {
     return this.site + path;
   }
-
-  filters = {
-    sort: {
-      type: FilterTypes.Picker,
-      label: 'Sắp xếp',
-      value: 'view',
-      options: [
-        { label: 'Không sắp xếp', value: '' },
-        { label: 'Mới nhập kho', value: 'new' },
-        { label: 'Mới cập nhật', value: 'update' },
-        { label: 'Lượt đọc tổng', value: 'view' },
-        { label: 'Lượt đọc tuần', value: 'viewweek' },
-        { label: 'Lượt đọc ngày', value: 'viewday' },
-        { label: 'Lượt thích', value: 'like' },
-        { label: 'Lượt theo dõi', value: 'following' },
-        { label: 'Lượt đánh dấu', value: 'bookmarked' },
-        { label: 'Đề cử', value: 'auto' },
-      ],
-    },
-    minc: {
-      type: FilterTypes.Picker,
-      label: 'Số chương tối thiểu',
-      value: '0',
-      options: [
-        { label: 'Tất cả', value: '0' },
-        { label: '> 50', value: '50' },
-        { label: '> 100', value: '100' },
-        { label: '> 200', value: '200' },
-        { label: '> 500', value: '500' },
-        { label: '> 1000', value: '1000' },
-        { label: '> 1500', value: '1500' },
-        { label: '> 2000', value: '2000' },
-      ],
-    },
-    category: {
-      type: FilterTypes.Picker,
-      label: 'Thể loại chính',
-      value: '',
-      options: [
-        { label: 'Tất cả', value: '' },
-        { label: 'Huyền huyễn', value: 'hh' },
-        { label: 'Đô thị', value: 'dt' },
-        { label: 'Ngôn tình', value: 'nt' },
-        { label: 'Võng du', value: 'vd' },
-        { label: 'Khoa học viễn tưởng', value: 'kh' },
-        { label: 'Lịch sử', value: 'ls' },
-        { label: 'Đồng nhân', value: 'dn' },
-        { label: 'Dị năng', value: 'dna' },
-        { label: 'Linh dị', value: 'ld' },
-        { label: 'Light Novel', value: 'ln' },
-      ],
-    },
-    type: {
-      type: FilterTypes.Picker,
-      label: 'Loại truyện',
-      value: '',
-      options: [
-        { label: 'Tất cả', value: '' },
-        { label: 'Truyện sáng tác', value: 'sangtac' },
-        { label: 'Truyện dịch', value: 'dich' },
-        { label: 'Truyện tranh', value: 'comic' },
-        { label: 'Txt dịch tự động', value: 'txt' },
-        { label: 'Truyện scan ảnh', value: 'scan' },
-      ],
-    },
-    step: {
-      type: FilterTypes.Picker,
-      label: 'Trạng thái đăng',
-      value: '',
-      options: [
-        { label: 'Tất cả', value: '' },
-        { label: 'Hoàn thành', value: '3' },
-        { label: 'Còn tiếp', value: '1' },
-        { label: 'Tạm ngưng', value: '2' },
-        { label: 'Không tạm ngưng', value: '5' },
-      ],
-    },
-    host: {
-      type: FilterTypes.Picker,
-      label: 'Nguồn truyện',
-      value: '',
-      options: [
-        { label: 'Tất cả', value: '' },
-        { label: '[Vip] fanqie (Cà Chua)', value: 'fanqie' },
-        { label: '[Vip] qidian (Khởi Điểm)', value: 'qidian' },
-        { label: '[Vip] ciweimao', value: 'ciweimao' },
-        { label: '[Vip] faloo (Phi Lư)', value: 'faloo' },
-        { label: '[Vip] jjwxc (Tấn Giang)', value: 'jjwxc' },
-        { label: '[Vip] sfacg', value: 'sfacg' },
-        { label: '[Vip] zongheng (Tung Hoành)', value: 'zongheng' },
-        { label: '[Free] 69shu', value: '69shu' },
-        { label: '[Free] tadu', value: 'tadu' },
-        { label: '[Free] qimao (7 Mèo)', value: 'qimao' },
-        { label: '[Free] idejian', value: 'idejian' },
-        { label: '[LN] linovel', value: 'linovel' },
-        { label: '[LN] wenku8', value: 'wenku8' },
-      ],
-    },
-    tag: {
-      type: FilterTypes.CheckboxGroup,
-      label: 'Nhãn',
-      value: [],
-      options: [
-        { label: 'Đô Thị', value: 'dothi' },
-        { label: 'Xuyên Qua', value: 'xuyenqua' },
-        { label: 'Hệ Thống', value: 'hethong' },
-        { label: 'Huyền Huyễn', value: 'huyenhuyen' },
-        { label: 'Ngôn Tình', value: 'ngontinh' },
-        { label: 'Đồng Nhân', value: 'dongnhan' },
-        { label: 'Trùng Sinh', value: 'trungsinh' },
-        { label: 'Lịch Sử', value: 'lichsu' },
-        { label: 'Khoa Huyễn', value: 'khoahuyen' },
-        { label: 'Tiên Hiệp', value: 'tienhiep' },
-        { label: 'Võ Hiệp', value: 'vohiep' },
-        { label: 'Sảng Văn', value: 'sangvan' },
-        { label: 'Light Novel', value: 'lightnovel' },
-        { label: 'Linh Dị', value: 'linhdi' },
-        { label: 'Kỳ Huyễn', value: 'kyhuyen' },
-        { label: 'Tận Thế', value: 'tanthe' },
-        { label: 'Ngọt Sủng', value: 'ngotsung' },
-        { label: 'Sân Trường', value: 'santruong' },
-        { label: 'Nhiệt Huyết', value: 'nhiethuyet' },
-        { label: 'Nhanh Xuyên', value: 'nhanhxuyen' },
-      ],
-    },
-  } satisfies Filters;
 }
 
 export default new SangTacVietPlugin();
