@@ -129,8 +129,7 @@ class M3UPlayerPlugin implements Plugin.PluginBase {
   id = 'yuneko.m3uplayer';
   name = '🎞 M3U Player';
   icon = 'src/multi/m3uplayer/icon.png';
-  site = 'https://vnepg.site';
-  version = '1.0.1';
+  version = '1.0.2';
 
   pluginSettings: Plugin.PluginSettings = {
     m3uUrl: {
@@ -138,7 +137,18 @@ class M3UPlayerPlugin implements Plugin.PluginBase {
       label: 'M3U URL',
       type: 'Text',
     },
+    referer: {
+      value: '',
+      label: 'Referer URL (Optional)',
+      type: 'Text',
+    }
   };
+
+  get site(): string {
+    const url = (storage.get('referer') ||
+      this.pluginSettings.referer.value) as string;
+    return url || 'https://vnepg.site';
+  }
 
   get m3uUrl(): string {
     const url = (storage.get('m3uUrl') || this.pluginSettings.m3uUrl.value) as string;
