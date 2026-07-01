@@ -107,14 +107,14 @@ const captchaHTML = `<div>
   </style>
 </div>`;
 
-const refreshCaptcha = () => {
+function refreshCaptcha() {
   const captchaImage = document.getElementById('captcha-image');
   const captchaInput = document.getElementById('captcha-input');
   captchaImage.src = '/generate_captcha.php?random=' + Math.random();
   captchaInput.value = '';
 };
 
-const captchaBtnClick = async () => {
+async function captchaBtnClick(){
   const captchaInput = document.getElementById('captcha-input');
   const captchaBtn = document.getElementById('captcha-btn');
   const captchaError = document.getElementById('captcha-error');

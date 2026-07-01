@@ -8,6 +8,7 @@ import { defaultCover } from '@libs/defaultCover';
 import { storage } from '@libs/storage';
 import { get, set, setFromResponse, removeSessionCookies } from '@libs/cookie';
 import { decodeHtmlEntities, encodeHtmlEntities } from '@libs/utils';
+import { solveCloudflareTurnstile } from '@libs/webview';
 import filters from './filters';
 import { STVChapterError } from './STVError';
 import { HOST_PATTERNS, ABT_HOSTS, looksLikeExternalUrl } from './ExternalURL';
@@ -236,7 +237,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
   get site() {
     return DOMAINS[this.selectedDomain] || SITE;
   }
-  version = '1.0.27';
+  version = '1.0.28';
   webStorageUtilized = true;
 
   pluginSettings: Plugin.PluginSettings = {
@@ -270,6 +271,11 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       type: 'Switch',
       label:
         'Tự động thử lại khi tải chương thất bại (Tối đa 10 lần, cách nhau 1 giây)',
+      value: false,
+    },
+    forceFetch: {
+      type: 'Switch',
+      label: 'Bắt buộc yêu cầu máy chủ tải lại chương (rescan)',
       value: false,
     },
     autoName: {
@@ -310,6 +316,10 @@ class SangTacVietPlugin implements Plugin.PluginBase {
 
   get autoName() {
     return storage.get('autoName') as boolean;
+  }
+
+  get forceFetch() {
+    return storage.get('forceFetch') as boolean;
   }
 
   async applyTranslationCookies(origin: string): Promise<void> {
@@ -701,7 +711,7 @@ class SangTacVietPlugin implements Plugin.PluginBase {
         Referer: referer,
         ...(await this._cookieHeader(origin)),
       },
-      body: '',
+      body: this.forceFetch ? 'rescan=true&k=' : '',
     });
     const data = this.parseLooseJson(await chapRes.text());
     if (!data) {
@@ -722,7 +732,39 @@ class SangTacVietPlugin implements Plugin.PluginBase {
       console.warn('Unexpected chapter API response', data);
       switch (String(data.code)) {
         case '21': {
-          return "<div id='captcha-placeholder'></div><meta id='no-cache-marker'/><meta id='no-prefetch-marker'/>";
+          // return "<div id='captcha-placeholder'></div><meta id='no-cache-marker'/><meta id='no-prefetch-marker'/>";
+          // Test Cloudflare Captcha
+          try {
+            const captchaToken = await solveCloudflareTurnstile(
+              `${this.site}${chapterPath}`,
+              '0x4AAAAAABVjME7NHipdnj-c',
+            );
+            if (!captchaToken) {
+              throw new Error('Captcha solving failed or was cancelled.');
+            }
+            const body = new URLSearchParams();
+            body.set('ajax', 'verifycaptcha');
+            body.set('token', captchaToken);
+            body.set('purpose', 'read');
+            body.set('provider', 'cloudflare');
+            // Verify the captcha token with the server
+            const respCaptcha = await fetchApi(`${this.site}/index.php?ngmar=verifyca`, {
+              headers: {
+                accept: '*/*',
+                'accept-language': 'vi',
+                'content-type': 'application/x-www-form-urlencoded',
+                pragma: 'no-cache',
+                referer: `${this.site}${chapterPath}`,
+              },
+              body: body.toString(),
+              method: 'POST',
+            });
+            console.log('Captcha verification response:', await respCaptcha.text());
+            return this._parseChapter(chapterPath); // Retry after captcha
+          } catch (e) {
+            console.error('Captcha solving error:', e);
+            return "<div id='captcha-placeholder'></div><meta id='no-cache-marker'/><meta id='no-prefetch-marker'/>";
+          }
         }
         default: {
           throw new STVChapterError(Number(data.code), data);
