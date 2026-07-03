@@ -3,7 +3,7 @@ import { Plugin } from '@/types/plugin';
 import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
-import { encodeHtmlEntities } from '@libs/utils';
+import { encodeHtmlEntities, createVolumePage } from '@libs/utils';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 import { storage } from '@libs/storage';
 
@@ -13,8 +13,8 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   id = 'animevietsub';
   name = '🎞 AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
-  site = 'https://animevietsub.pl';
-  version = '1.0.37';
+  site = 'https://animevietsub.love';
+  version = '1.0.38';
   filters = filters;
 
   customJS = 'src/vi/animevietsub/player.js';
@@ -294,7 +294,7 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
             name: epLabel,
             path,
             chapterNumber: Number.isFinite(num) ? num : idx + 1,
-            page: name?.length ? name + '\u200b' : undefined,
+            page: name?.length ? createVolumePage(name) : undefined,
           });
         });
     });

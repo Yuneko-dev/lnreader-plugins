@@ -3,13 +3,14 @@ import { Plugin } from '@/types/plugin';
 import { CheerioAPI, load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
+import { createVolumePage } from '@libs/utils';
 
 class ValvrareTeamPlugin implements Plugin.PluginBase {
   id = 'valvrareteam';
   name = 'Valvrareteam';
   icon = 'src/vi/valvrareteam/icon.png';
   site = 'https://valvrareteam.net';
-  version = '1.0.11';
+  version = '1.0.12';
 
   api = 'https://val-ssr-2kzit.ondigitalocean.app/api';
 
@@ -112,9 +113,9 @@ class ValvrareTeamPlugin implements Plugin.PluginBase {
 
     $('.module-container').each((_, moduleElement) => {
       const $module = $(moduleElement);
-      const volumeName =
-        this.normalizeInline($module.find('.module-title').first().text()) +
-        '\u200b';
+      const volumeName = createVolumePage(
+        this.normalizeInline($module.find('.module-title').first().text()),
+      );
 
       const templateId = $module
         .find('.module-content-wrapper > template[id^="B:"]')

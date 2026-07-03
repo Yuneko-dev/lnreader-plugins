@@ -4,7 +4,7 @@ import { Plugin } from '@/types/plugin';
 import { NovelStatus } from '@libs/novelStatus';
 import { FilterTypes, Filters } from '@libs/filterInputs';
 import { storage } from '@libs/storage';
-import { bytesToUtf8, Buffer } from '@libs/utils';
+import { bytesToUtf8, Buffer, createVolumePage } from '@libs/utils';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 import { Parser } from 'htmlparser2';
 
@@ -178,7 +178,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.9';
+  version = '1.2.10';
 
   customCSS = 'src/vi/hakolightnovel/custom.css';
 
@@ -427,14 +427,15 @@ class HakoPlugin implements Plugin.PluginBase {
     let part = 1;
 
     $('.volume-list').each((_, volumeElement) => {
-      const volume =
+      const volume = createVolumePage(
         $(volumeElement)
           .find('.sect-title')
           .first()
           .text()
           .replace(/\*/g, '') // ?
           .replace(/\s+/g, ' ')
-          .trim() + '\u200b'; // hacky
+          .trim(),
+      );
 
       $(volumeElement)
         .find('.list-chapters > li')

@@ -3,7 +3,7 @@ import { Plugin } from '@/types/plugin';
 import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
 import { NovelStatus } from '@libs/novelStatus';
-import { encodeHtmlEntities } from '@libs/utils';
+import { createVolumePage, encodeHtmlEntities } from '@libs/utils';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 import { storage } from '@libs/storage';
 import filters from './filters';
@@ -15,7 +15,7 @@ class KKPhimPlugin implements Plugin.PluginBase {
   name = '🎞 KKPhim';
   icon = 'src/vi/kkphim/icon.png';
   site = SITE;
-  version = '1.0.0';
+  version = '1.0.1';
   customJS = 'src/vi/kkphim/player.js';
 
   filters = filters;
@@ -222,7 +222,7 @@ class KKPhimPlugin implements Plugin.PluginBase {
               name: ep.name,
               path: ep.m3u8,
               chapterNumber: Number.isFinite(epNum) ? epNum : chapterIndex,
-              page: serverName ? serverName + '\u200b' : undefined,
+              page: serverName ? createVolumePage(serverName) : undefined,
             });
           }
         }

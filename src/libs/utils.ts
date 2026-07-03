@@ -8,5 +8,7 @@ export {
   Buffer,
   NodeCrypto,
   getUserAgent,
+  createVolumePage,
+  VOLUME_PAGE_MARKER,
 } from '../lib/utils';
 export { encodeHtmlEntities, decodeHtmlEntities } from '../lib/html-entities';
