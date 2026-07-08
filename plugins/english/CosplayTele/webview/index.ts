@@ -22,6 +22,7 @@ function log(msg: string) {
 
 async function fetchText(url: string, referer: string): Promise<string> {
   const w = window as EmbedPlayerWindow;
+   // eslint-disable-next-line
   const init: RequestInit = {
     headers: {
       Referer: referer,
