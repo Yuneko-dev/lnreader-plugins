@@ -13,6 +13,7 @@ body:
       description: Select the affected plugin(s).
       multiple: true
       options:
+        - "English: 🖼️ CosplayTele"
         - "日本語: NocSyosetu"
         - "日本語: Pixiv Novel"
         - "조선말, 한국어: Newtoki"
