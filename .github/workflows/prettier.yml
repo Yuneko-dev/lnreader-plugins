@@ -22,12 +22,8 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Install Prettier
-        run: |
-          rm package.json
-          rm package-lock.json
-          npm init -y
-          npm install prettier@3.2.5
+      - name: Install Dependencies
+        run: npm install
 
       - name: Check Code Formatting
         run: npx prettier --check "./**/*.{ts,tsx,js,css}"

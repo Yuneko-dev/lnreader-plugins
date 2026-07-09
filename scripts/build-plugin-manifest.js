@@ -108,14 +108,6 @@ for (let language in languages) {
   plugins.forEach(plugin => {
     if (plugin.startsWith('.')) return;
 
-    // Check if plugin is BROKEN
-    const brokenPath = path.join(
-      './plugins',
-      language.toLowerCase(),
-      plugin,
-      'BROKEN',
-    );
-
     minify(path.join(langPath, plugin));
     const rawCode = fs.readFileSync(
       `${COMPILED_PLUGIN_DIR}/${language.toLowerCase()}/${plugin}`,

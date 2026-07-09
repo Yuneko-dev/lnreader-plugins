@@ -8,50 +8,55 @@ import { bytesToUtf8, Buffer, createVolumePage } from '@libs/utils';
 import { isUrlAbsolute } from '@libs/isAbsoluteUrl';
 import { NodeHtmlMarkdown } from 'node-html-markdown';
 
-const nhm = new NodeHtmlMarkdown({
-  blockElements: [
-    // Metadata
-    'head',
-    'title',
-    'meta',
-    'base',
-    'link',
+const htmlToMarkdown = (html: string): string => {
+  if (html.length === 0) {
+    return '';
+  }
+  return NodeHtmlMarkdown.translate(html, {
+    blockElements: [
+      // Metadata
+      'head',
+      'title',
+      'meta',
+      'base',
+      'link',
 
-    // Script
-    'script',
-    'noscript',
+      // Script
+      'script',
+      'noscript',
 
-    // Style
-    'style',
+      // Style
+      'style',
 
-    // Embedded content
-    'iframe',
-    'object',
-    'embed',
-    'applet',
+      // Embedded content
+      'iframe',
+      'object',
+      'embed',
+      'applet',
 
-    // SVG / Canvas
-    'svg',
-    'canvas',
+      // SVG / Canvas
+      'svg',
+      'canvas',
 
-    // Media source
-    'source',
-    'track',
+      // Media source
+      'source',
+      'track',
 
-    // Template
-    'template',
+      // Template
+      'template',
 
-    // Param
-    'param',
+      // Param
+      'param',
 
-    // Media
-    'audio',
-    'video',
+      // Media
+      'audio',
+      'video',
 
-    // Other
-    'wbr',
-  ],
-});
+      // Other
+      'wbr',
+    ],
+  });
+};
 
 function urlToPath(url: string): string {
   if (!isUrlAbsolute(url)) {
@@ -314,7 +319,7 @@ class HakoPlugin implements Plugin.PluginBase {
     novel.name = $('.series-name').first().text().trim();
 
     if (this.showMetadataInDescription) {
-      const summary = nhm.translate($('.summary-content').html() || '');
+      const summary = htmlToMarkdown($('.summary-content').html() || '');
       const prefixHeader = '## ✦';
       const facts = $('.fact-item')
         .map((_, el) => {
@@ -325,7 +330,7 @@ class HakoPlugin implements Plugin.PluginBase {
             .trim()
             .replace(/:$/, '');
 
-          const factValue = nhm.translate(
+          const factValue = htmlToMarkdown(
             $(el).find('.fact-value').html() || '',
           );
           return `${prefixHeader} ${factName}\n${factValue}`;
@@ -346,7 +351,7 @@ class HakoPlugin implements Plugin.PluginBase {
         ...(result
           ? [
               `${prefixHeader} ${result.title}`,
-              nhm.translate(result.content).trim(),
+              htmlToMarkdown(result.content).trim(),
             ]
           : []),
       ].join('\n');
