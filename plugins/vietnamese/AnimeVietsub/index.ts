@@ -1,4 +1,4 @@
-import { fetchText } from '@libs/fetch';
+import { fetchApi } from '@libs/fetch';
 import { Plugin } from '@/types/plugin';
 import { load as loadCheerio } from 'cheerio';
 import { defaultCover } from '@libs/defaultCover';
@@ -14,8 +14,8 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   id = 'animevietsub';
   name = 'AnimeVietsub';
   icon = 'src/vi/animevietsub/icon.png';
-  site = 'https://animevietsub.love';
-  version = '1.0.39';
+  site = 'https://animevietsub.meme';
+  version = '1.0.40';
   filters = filters;
   contentType = ContentType.VIDEO;
 
@@ -80,8 +80,11 @@ class AnimeVietsubPlugin implements Plugin.PluginBase {
   }
 
   private async fetchHTML(url: string, isRetry = false): Promise<string> {
-    const text = await fetchText(url);
+    const req = await fetchApi(url);
+    const text = await req.text();
+    // console.log('fetchHTML', url, req.status, isRetry, text);
     if (
+      req.status === 403 &&
       text.includes('<title></title>') &&
       text.includes('<div></div>') &&
       /window\.location\.href\s*=\s*(["'`])(.*?)\1\s*;?/.test(text) &&
