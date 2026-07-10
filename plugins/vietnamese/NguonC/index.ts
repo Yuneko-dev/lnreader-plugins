@@ -8,6 +8,7 @@ import { ContentType } from '@libs/pluginMetadata';
 import { storage } from '@libs/storage';
 import { load } from 'cheerio';
 
+
 const SITE = 'https://phim.nguonc.com';
 const API_BASE = SITE + '/api';
 
@@ -16,7 +17,7 @@ class NguonCPlugin implements Plugin.PluginBase {
   name = 'NguonC';
   icon = 'src/vi/nguonc/icon.png';
   site = SITE;
-  version = '1.0.9';
+  version = '1.0.10';
   customJS = 'src/vi/nguonc/player.js';
   contentType = ContentType.VIDEO;
 
@@ -286,14 +287,15 @@ class NguonCPlugin implements Plugin.PluginBase {
     const html = await fetchText(url);
     const $ = load(html);
     const div = $('#player');
+    const dataObf = div.attr('data-obf')!;
     const obf = JSON.parse(
-      Buffer.from(div.attr('data-obf')!, 'base64').toString(),
+      Buffer.from(dataObf, 'base64').toString(),
     ) as {
       sUb: string;
       hD: string;
-      kX: string;
+      kX?: string;
     };
-    return obf;
+    return { hD: obf.hD, dataObf };
   }
 
   // ---------- buildPlayerHtml ----------
@@ -318,23 +320,11 @@ class NguonCPlugin implements Plugin.PluginBase {
         `<meta name="lnreader-video-url" content="${encodeHtmlEntities(opts.embed)}">`,
       );
     } else {
-      /*
-    if (opts.m3u8) {
-      // không phải m3u8 của nguonc nên chưa rõ cách bypass
-      metas.push('<meta name="lnreader-video-mode" content="direct">', '<meta name="lnreader-video-type" content="m3u8">');
-      metas.push(
-        `<meta name="lnreader-video-url" content="${encodeHtmlEntities(opts.m3u8)}">`,
-      );
-    } else {
-    */
       metas.push('<meta name="lnreader-video-mode" content="lazy">');
+      const iframeObf = await this.getM3u8DataFromEmbed(opts.embed!);
       const attrs: string[] = ['id="nguonc-player-container"'];
       attrs.push(`data-iframe="${encodeHtmlEntities(opts.embed)}"`);
-      // trying fetch iframe
-      const iframeObf = await this.getM3u8DataFromEmbed(opts.embed!);
-      attrs.push(`data-s="${encodeHtmlEntities(iframeObf?.sUb)}"`);
-      attrs.push(`data-h="${encodeHtmlEntities(iframeObf?.hD)}"`);
-      attrs.push(`data-k="${encodeHtmlEntities(iframeObf?.kX)}"`);
+      attrs.push(`data-obf="${encodeHtmlEntities(iframeObf?.dataObf || '')}"`);
       metas.push(`<div ${attrs.join(' ')} style="display:none;"></div>`);
     }
 
