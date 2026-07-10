@@ -94,7 +94,7 @@ class NocSyosetu implements Plugin.PagePlugin {
   site = 'https://noc.syosetu.com';
   version = '1.1.20';
   contentType = ContentType.NOVEL;
-  contentWarning = ContentWarning.NSFW
+  contentWarning = ContentWarning.NSFW;
 
   pluginSettings: Plugin.PluginSettings = {
     nocsyosetu_translate: {

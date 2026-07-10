@@ -171,11 +171,12 @@ class CosplayTelePlugin implements Plugin.PluginBase {
   name = 'CosplayTele';
   icon = 'src/en/cosplaytele/icon.png';
   site = SITE;
-  version = '1.0.1';
+  version = '1.0.2';
   contentType = ContentType.IMAGE;
   contentWarning = ContentWarning.NSFW;
 
   customJS = 'src/en/cosplaytele/custom.js';
+  customCSS = 'src/en/cosplaytele/custom.css';
 
   imageRequestInit: Plugin.ImageRequestInit = {
     headers: {
