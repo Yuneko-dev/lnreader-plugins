@@ -307,7 +307,9 @@ class NewtokiPlugin implements Plugin.PluginBase {
       }
     }
 
-    const body = await fetchText(url.toString(), { headers: this.defaultHeaders() });
+    const body = await fetchText(url.toString(), {
+      headers: this.defaultHeaders(),
+    });
     if (!body) {
       throw new Error(
         'This website is using Cloudflare to protect against malicious bots. Use WebView to bypass it.',

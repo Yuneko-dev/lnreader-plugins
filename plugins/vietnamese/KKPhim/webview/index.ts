@@ -20,10 +20,16 @@ function collapseConsecutiveDiscontinuities(playlist: string): string {
     }
   }
 
-  while (normalized.length > 0 && normalized[normalized.length - 1].trim().length === 0) {
+  while (
+    normalized.length > 0 &&
+    normalized[normalized.length - 1].trim().length === 0
+  ) {
     normalized.pop();
   }
-  if (normalized.length > 0 && normalized[normalized.length - 1].trim() === DISCONTINUITY_TAG) {
+  if (
+    normalized.length > 0 &&
+    normalized[normalized.length - 1].trim() === DISCONTINUITY_TAG
+  ) {
     normalized.pop();
   }
 
@@ -54,13 +60,13 @@ function processDiscontinuityBlocks(playlist: string): string {
 
     if (i < lines.length) i++; // skip closing DISCONTINUITY
 
-    const segmentLines = blockLines.filter((l) => {
+    const segmentLines = blockLines.filter(l => {
       const trimmed = l.trim();
       return trimmed.length > 0 && !trimmed.startsWith('#');
     });
 
     // Match /v7/, /v8/, convertv7/, convertv8/ etc. (ad segments)
-    const isAdBlock = segmentLines.some((l) => /\/v\d+\/|convertv\d+\//.test(l));
+    const isAdBlock = segmentLines.some(l => /\/v\d+\/|convertv\d+\//.test(l));
 
     if (!isAdBlock) {
       result.push(DISCONTINUITY_TAG);
@@ -110,7 +116,8 @@ function cleanManifest(manifest: string): string {
     }
 
     const averageDuration = segmentCount > 0 ? totalDuration / segmentCount : 0;
-    const shortDurationRatio = segmentCount > 0 ? shortDurationCount / segmentCount : 0;
+    const shortDurationRatio =
+      segmentCount > 0 ? shortDurationCount / segmentCount : 0;
 
     const isAdBlock =
       segmentCount >= 8 &&
@@ -125,7 +132,8 @@ function cleanManifest(manifest: string): string {
   }
 
   for (let i = 0; i < lines.length; i++) {
-    if (/^#EXT-X-KEY:METHOD=NONE\b/i.test(lines[i].trim())) removeLine[i] = true;
+    if (/^#EXT-X-KEY:METHOD=NONE\b/i.test(lines[i].trim()))
+      removeLine[i] = true;
     if (lines[i].trim() === DISCONTINUITY_TAG) removeLine[i] = true;
   }
 
@@ -136,7 +144,10 @@ function cleanManifest(manifest: string): string {
     }
   }
 
-  return cleanedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return cleanedLines
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function isContainAds(playlist: string): boolean {
@@ -149,10 +160,11 @@ function cleanMediaPlaylistText(text: string, baseUrl: string): string {
   if (!text.includes('#EXTM3U')) return text;
 
   // Resolve relative URLs to absolute
-  const withAbsoluteUrls = text.replace(/^[^#].*$/gm, (line) => {
+  const withAbsoluteUrls = text.replace(/^[^#].*$/gm, line => {
     const trimmed = line.trim();
     if (!trimmed) return line;
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return line;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://'))
+      return line;
     try {
       return new URL(trimmed, baseUrl).toString();
     } catch {
@@ -175,7 +187,8 @@ function cleanMediaPlaylistText(text: string, baseUrl: string): string {
   if (!container) return;
 
   const m3u8Url = container.getAttribute('data-m3u8') || '';
-  const adBlockerDisabled = container.getAttribute('data-ad-blocker') === 'true';
+  const adBlockerDisabled =
+    container.getAttribute('data-ad-blocker') === 'true';
 
   if (!m3u8Url) {
     window.LNReaderPlayer.log('No m3u8 URL found');
@@ -183,7 +196,9 @@ function cleanMediaPlaylistText(text: string, baseUrl: string): string {
   }
 
   window.LNReaderPlayer.log('KKPhim player initialized');
-  window.LNReaderPlayer.log('Ad blocker: ' + (adBlockerDisabled ? 'OFF' : 'ON'));
+  window.LNReaderPlayer.log(
+    'Ad blocker: ' + (adBlockerDisabled ? 'OFF' : 'ON'),
+  );
 
   if (adBlockerDisabled) {
     window.LNReaderPlayer.log('Playing m3u8 directly (ad blocker off)');
@@ -220,7 +235,9 @@ function cleanMediaPlaylistText(text: string, baseUrl: string): string {
         const streamPlaylist = await streamRes.text();
         const cleaned = cleanMediaPlaylistText(streamPlaylist, streamUrl);
         window.LNReaderPlayer.log('Ad cleaning complete, playing...');
-        const blob = new Blob([cleaned], { type: 'application/vnd.apple.mpegurl' });
+        const blob = new Blob([cleaned], {
+          type: 'application/vnd.apple.mpegurl',
+        });
         const blobUrl = URL.createObjectURL(blob);
         window.LNReaderPlayer.playHls(blobUrl);
         return;

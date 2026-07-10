@@ -143,7 +143,7 @@ class M3UPlayerPlugin implements Plugin.PluginBase {
       value: '',
       label: 'Referer URL (Optional)',
       type: 'Text',
-    }
+    },
   };
 
   get site(): string {
@@ -153,8 +153,12 @@ class M3UPlayerPlugin implements Plugin.PluginBase {
   }
 
   get m3uUrl(): string {
-    const url = (storage.get('m3uUrl') || this.pluginSettings.m3uUrl.value) as string;
-    if (!url) throw new Error("Please add a valid M3U playlist URL in the plugin settings.");
+    const url = (storage.get('m3uUrl') ||
+      this.pluginSettings.m3uUrl.value) as string;
+    if (!url)
+      throw new Error(
+        'Please add a valid M3U playlist URL in the plugin settings.',
+      );
     return url;
   }
 
@@ -192,7 +196,7 @@ class M3UPlayerPlugin implements Plugin.PluginBase {
 
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     if (!novelPath.startsWith('/m3u?')) {
-      throw new Error("Invalid URL");
+      throw new Error('Invalid URL');
     }
     const params = new URLSearchParams(novelPath.split('?')[1]);
     const name = params.get('name') || 'Unknown';
@@ -215,7 +219,7 @@ class M3UPlayerPlugin implements Plugin.PluginBase {
 
   async parseChapter(chapterPath: string): Promise<string> {
     if (!chapterPath.startsWith('/m3u?')) {
-      throw new Error("Invalid URL");
+      throw new Error('Invalid URL');
     }
     const params = new URLSearchParams(chapterPath.split('?')[1]);
     const url = params.get('url') || '';

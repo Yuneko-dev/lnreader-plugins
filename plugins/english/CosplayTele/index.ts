@@ -29,7 +29,10 @@ const topCosplayOptions = [
 
 function cleanTitle(raw: string): string {
   let title = decodeHtmlEntities(raw).trim();
-  title = title.replace(/\s*[“"']?(?:\d+\s+(?:photos?|videos?|gifs?)(?:,\s*|\s+and\s+)?)+[”"']?\s*$/i, '');
+  title = title.replace(
+    /\s*[“"']?(?:\d+\s+(?:photos?|videos?|gifs?)(?:,\s*|\s+and\s+)?)+[”"']?\s*$/i,
+    '',
+  );
   title = title.replace(/[“"”]/g, '').trim();
   return title;
 }
@@ -60,7 +63,9 @@ function buildListUrl(
   return `${normalized}page/${pageNo}/`;
 }
 
-function parseNovelCards($: ReturnType<typeof loadCheerio>): Plugin.NovelItem[] {
+function parseNovelCards(
+  $: ReturnType<typeof loadCheerio>,
+): Plugin.NovelItem[] {
   const novels: Plugin.NovelItem[] = [];
   const seen = new Set<string>();
 
@@ -93,7 +98,10 @@ function parseNovelCards($: ReturnType<typeof loadCheerio>): Plugin.NovelItem[] 
 }
 
 function extractAuthor($: ReturnType<typeof loadCheerio>): string {
-  const cosplayerLink = $('blockquote a[href*="/category/"]').first().text().trim();
+  const cosplayerLink = $('blockquote a[href*="/category/"]')
+    .first()
+    .text()
+    .trim();
   if (cosplayerLink) return cosplayerLink;
 
   const block = $('blockquote').first().text();
@@ -212,9 +220,7 @@ class CosplayTelePlugin implements Plugin.PluginBase {
   ): Promise<Plugin.NovelItem[]> {
     const term = encodeURIComponent(searchTerm.trim());
     const url =
-      pageNo > 1
-        ? `${SITE}/page/${pageNo}/?s=${term}`
-        : `${SITE}/?s=${term}`;
+      pageNo > 1 ? `${SITE}/page/${pageNo}/?s=${term}` : `${SITE}/?s=${term}`;
     const html = await this.fetchPage(url);
     const $ = loadCheerio(html);
     return parseNovelCards($);

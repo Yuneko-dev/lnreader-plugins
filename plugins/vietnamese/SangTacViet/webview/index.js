@@ -111,9 +111,9 @@ function refreshCaptcha() {
   const captchaInput = document.getElementById('captcha-input');
   captchaImage.src = '/generate_captcha.php?random=' + Math.random();
   captchaInput.value = '';
-};
+}
 
-async function captchaBtnClick(){
+async function captchaBtnClick() {
   const captchaInput = document.getElementById('captcha-input');
   const captchaBtn = document.getElementById('captcha-btn');
   const captchaError = document.getElementById('captcha-error');
@@ -178,7 +178,7 @@ async function captchaBtnClick(){
     captchaBtn.disabled = false;
     captchaBtn.textContent = 'Xác thực';
   }
-};
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const captchaPlaceholder = document.getElementById('captcha-placeholder');

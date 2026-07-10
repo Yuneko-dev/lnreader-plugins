@@ -8,7 +8,9 @@ type PluginMetadata = Pick<
 
 export const R18_PLUGIN_NAME_COLOR = 'rgb(210, 15, 57)';
 
-const getContentTypePrefix = (contentType?: Plugin.PluginBase['contentType']) => {
+const getContentTypePrefix = (
+  contentType?: Plugin.PluginBase['contentType'],
+) => {
   switch (contentType) {
     case ContentType.VIDEO:
       return '📺 ';

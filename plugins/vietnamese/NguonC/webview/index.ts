@@ -65,16 +65,43 @@ async function decryptM3u8(
 
 function createProxyFragLoader(origin: string) {
   return class {
-    stats = { aborted: false, loaded: 0, retry: 0, total: 0, chunkCount: 0, bwEstimate: 0, loading: { start: 0, first: 0, end: 0 }, parsing: { start: 0, end: 0 }, buffering: { start: 0, first: 0, end: 0 } };
+    stats = {
+      aborted: false,
+      loaded: 0,
+      retry: 0,
+      total: 0,
+      chunkCount: 0,
+      bwEstimate: 0,
+      loading: { start: 0, first: 0, end: 0 },
+      parsing: { start: 0, end: 0 },
+      buffering: { start: 0, first: 0, end: 0 },
+    };
     constructor() {}
     destroy() {}
     abort() {}
     load(ctx: any, _cfg: any, cbs: any) {
       this.stats.loading.start = performance.now();
-      window.reader.fetch(ctx.url, { method: 'GET', headers: { Referer: origin }, referrer: origin })
-        .then((resp: any) => { if (!resp.ok) throw new Error('HTTP ' + resp.status); this.stats.loading.first = performance.now(); return resp.arrayBuffer(); })
-        .then((buf: any) => { this.stats.loading.end = performance.now(); this.stats.loaded = buf.byteLength; this.stats.total = buf.byteLength; cbs.onSuccess({ data: buf }, this.stats, ctx, null); })
-        .catch((err: any) => { this.stats.loading.end = performance.now(); cbs.onError({ code: 0, text: err.message }, ctx, null, this.stats); });
+      window.reader
+        .fetch(ctx.url, {
+          method: 'GET',
+          headers: { Referer: origin },
+          referrer: origin,
+        })
+        .then((resp: any) => {
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          this.stats.loading.first = performance.now();
+          return resp.arrayBuffer();
+        })
+        .then((buf: any) => {
+          this.stats.loading.end = performance.now();
+          this.stats.loaded = buf.byteLength;
+          this.stats.total = buf.byteLength;
+          cbs.onSuccess({ data: buf }, this.stats, ctx, null);
+        })
+        .catch((err: any) => {
+          this.stats.loading.end = performance.now();
+          cbs.onError({ code: 0, text: err.message }, ctx, null, this.stats);
+        });
     }
   };
 }
@@ -124,8 +151,12 @@ function createProxyFragLoader(origin: string) {
     if (!m3u8Text) throw new Error('Decryption failed');
 
     player.log('[NGC] Playing decrypted m3u8 (' + m3u8Text.length + ' chars)');
-    const blob = new Blob([m3u8Text], { type: 'application/vnd.apple.mpegurl' });
-    player.playHls(URL.createObjectURL(blob), { fLoader: createProxyFragLoader(embedOrigin) });
+    const blob = new Blob([m3u8Text], {
+      type: 'application/vnd.apple.mpegurl',
+    });
+    player.playHls(URL.createObjectURL(blob), {
+      fLoader: createProxyFragLoader(embedOrigin),
+    });
   } catch (err: any) {
     player.log('[NGC] Error: ' + (err?.message || err));
     player.playIframe(embedUrl);

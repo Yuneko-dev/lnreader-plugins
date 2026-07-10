@@ -8,7 +8,6 @@ import { ContentType } from '@libs/pluginMetadata';
 import { storage } from '@libs/storage';
 import { load } from 'cheerio';
 
-
 const SITE = 'https://phim.nguonc.com';
 const API_BASE = SITE + '/api';
 
@@ -288,9 +287,7 @@ class NguonCPlugin implements Plugin.PluginBase {
     const $ = load(html);
     const div = $('#player');
     const dataObf = div.attr('data-obf')!;
-    const obf = JSON.parse(
-      Buffer.from(dataObf, 'base64').toString(),
-    ) as {
+    const obf = JSON.parse(Buffer.from(dataObf, 'base64').toString()) as {
       sUb: string;
       hD: string;
       kX?: string;

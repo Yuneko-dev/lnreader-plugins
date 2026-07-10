@@ -38,3 +38,16 @@ export {
   encode as encodeHtmlEntities,
   decode as decodeHtmlEntities,
 } from 'html-entities';
+
+export const VOLUME_PAGE_MARKER = '\u200b' as const;
+
+export type VolumePage = `${string}${typeof VOLUME_PAGE_MARKER}`;
+
+export const createVolumePage = (name: string): VolumePage => {
+  const normalizedName = name.replace(/\u200b/g, '');
+  if (!normalizedName.trim()) {
+    throw new Error('Volume name must be non-empty');
+  }
+
+  return `${normalizedName}${VOLUME_PAGE_MARKER}`;
+};

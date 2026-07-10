@@ -49,7 +49,9 @@ class KKPhimPlugin implements Plugin.PluginBase {
         const u = new URL(url);
         const real = u.searchParams.get('url');
         if (real) return real;
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        /* ignore */
+      }
     }
     return url;
   }
@@ -82,7 +84,9 @@ class KKPhimPlugin implements Plugin.PluginBase {
       seen.add(path);
 
       const name = $link.find('h3').first().text().trim();
-      const cover = this.stripImageProxy($row.find('img').first().attr('src') || defaultCover);
+      const cover = this.stripImageProxy(
+        $row.find('img').first().attr('src') || defaultCover,
+      );
 
       if (name) {
         novels.push({ name, path, cover });
@@ -104,12 +108,15 @@ class KKPhimPlugin implements Plugin.PluginBase {
     params.set('page', String(pageNo));
 
     if (!showLatestNovels && filters) {
-      if (filters.sort_lang.value) params.set('sort_lang', filters.sort_lang.value);
-      if (filters.category.value) params.set('category', filters.category.value);
+      if (filters.sort_lang.value)
+        params.set('sort_lang', filters.sort_lang.value);
+      if (filters.category.value)
+        params.set('category', filters.category.value);
       if (filters.country.value) params.set('country', filters.country.value);
       if (filters.type.value) params.set('type', filters.type.value);
       if (filters.year.value) params.set('year', filters.year.value);
-      if (filters.sort_field.value) params.set('sort_field', filters.sort_field.value);
+      if (filters.sort_field.value)
+        params.set('sort_field', filters.sort_field.value);
     } else {
       params.set('sort_field', 'modified.time');
     }
@@ -134,9 +141,7 @@ class KKPhimPlugin implements Plugin.PluginBase {
   }
 
   // ---------- parseNovel ----------
-  async parseNovel(
-    novelPath: string,
-  ): Promise<Plugin.SourceNovel> {
+  async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     const url = `${SITE}${novelPath}`;
     const html = await this.fetchHTML(url);
     const $ = loadCheerio(html);
@@ -147,7 +152,9 @@ class KKPhimPlugin implements Plugin.PluginBase {
     const name = subtitle ? `${title} - ${subtitle}` : title;
 
     // Cover - from og:image meta tag
-    const cover = this.stripImageProxy($('meta[property="og:image"]').attr('content') || defaultCover);
+    const cover = this.stripImageProxy(
+      $('meta[property="og:image"]').attr('content') || defaultCover,
+    );
 
     // Description
     const summary = $('article').first().text().trim();
@@ -195,7 +202,10 @@ class KKPhimPlugin implements Plugin.PluginBase {
       for (let i = arrStart; i < html.length; i++) {
         if (html[i] === '[') depth++;
         if (html[i] === ']') depth--;
-        if (depth === 0) { arrEnd = i; break; }
+        if (depth === 0) {
+          arrEnd = i;
+          break;
+        }
       }
 
       let episodesData: {
@@ -211,9 +221,10 @@ class KKPhimPlugin implements Plugin.PluginBase {
       }
 
       if (episodesData.length) {
-
         for (const server of episodesData) {
-          const serverName = (server.server_name || '').replace(/^#/, '').trim();
+          const serverName = (server.server_name || '')
+            .replace(/^#/, '')
+            .trim();
 
           for (const ep of server.list) {
             if (!ep.m3u8) continue;
@@ -237,13 +248,10 @@ class KKPhimPlugin implements Plugin.PluginBase {
   }
 
   // ---------- parsePage ----------
-  async parsePage(
-    novelPath: string,
-    page: string,
-  ): Promise<Plugin.SourcePage> {
+  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
     const novel = await this.parseNovel(novelPath);
     return {
-      chapters: (novel.chapters || []).filter((ch) => ch.page === page),
+      chapters: (novel.chapters || []).filter(ch => ch.page === page),
     };
   }
 

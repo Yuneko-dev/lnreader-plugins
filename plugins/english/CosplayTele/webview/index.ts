@@ -22,7 +22,7 @@ function log(msg: string) {
 
 async function fetchText(url: string, referer: string): Promise<string> {
   const w = window as EmbedPlayerWindow;
-   // eslint-disable-next-line
+  // eslint-disable-next-line
   const init: RequestInit = {
     headers: {
       Referer: referer,
@@ -123,7 +123,10 @@ async function resolveEmbedM3u8(embedUrl: string): Promise<string | null> {
  * create blob URL, and use custom loader for segments.
  * Skips the master m3u8 — passes the media playlist directly.
  */
-async function playHlsViaReader(m3u8Url: string, embedUrl: string): Promise<void> {
+async function playHlsViaReader(
+  m3u8Url: string,
+  embedUrl: string,
+): Promise<void> {
   const w = window as EmbedPlayerWindow;
   if (!w.LNReaderPlayer) return;
 
@@ -171,7 +174,8 @@ async function playMediaPlaylist(
   if (!w.LNReaderPlayer) return;
 
   const subUrlObj = new URL(playlistUrl);
-  const subBase = subUrlObj.origin + subUrlObj.pathname.replace(/\/[^/]*$/, '/');
+  const subBase =
+    subUrlObj.origin + subUrlObj.pathname.replace(/\/[^/]*$/, '/');
 
   // Step 1: Pre-fetch AES-128 key(s) via reader.fetch → blob URLs
   // hls.js loads keys through its own internal loader (not fLoader),
@@ -249,18 +253,18 @@ async function playMediaPlaylist(
           headers: { Referer: referer },
           referrer: referer,
         })
-        .then((resp) => {
+        .then(resp => {
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           this.stats.loading.first = performance.now();
           return resp.arrayBuffer();
         })
-        .then((buf) => {
+        .then(buf => {
           this.stats.loading.end = performance.now();
           this.stats.loaded = buf.byteLength;
           this.stats.total = buf.byteLength;
           cbs.onSuccess({ data: buf }, this.stats, ctx, null);
         })
-        .catch((err) => {
+        .catch(err => {
           if (err.name === 'AbortError') return;
           this.stats.loading.end = performance.now();
           cbs.onError({ code: 0, text: err.message }, ctx, null, this.stats);
