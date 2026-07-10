@@ -6,6 +6,7 @@ import { FilterTypes, Filters } from '@libs/filterInputs';
 import { NovelStatus } from '@libs/novelStatus';
 import { storage } from '@libs/storage';
 import { get, set } from '@libs/cookie';
+import { ContentType, ContentWarning } from '@libs/pluginMetadata';
 
 const supportedLanguages: Record<string, string> = {
   af: 'Afrikaans',
@@ -91,7 +92,9 @@ class NocSyosetu implements Plugin.PagePlugin {
   name = 'NocSyosetu';
   icon = 'src/jp/nocsyosetu/icon.png';
   site = 'https://noc.syosetu.com';
-  version = '1.1.19';
+  version = '1.1.20';
+  contentType = ContentType.NOVEL;
+  contentWarning = ContentWarning.NSFW
 
   pluginSettings: Plugin.PluginSettings = {
     nocsyosetu_translate: {
