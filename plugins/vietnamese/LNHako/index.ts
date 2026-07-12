@@ -160,7 +160,7 @@ class HakoPlugin implements Plugin.PluginBase {
   id = 'ln.hako.vn';
   name = 'Hako Novel';
   icon = 'src/vi/hakolightnovel/icon.png';
-  version = '1.2.11';
+  version = '1.2.12';
 
   customCSS = 'src/vi/hakolightnovel/custom.css';
 
@@ -620,6 +620,9 @@ class HakoPlugin implements Plugin.PluginBase {
 
       // Avatar decoration
       commentSection.find('img[src*="/images/frames"]').remove();
+
+      // Edit comment
+      commentSection.find('.ln-comment-toolkit').parent().remove();
 
       output = `${output}\n\n${commentSection.prop('outerHTML')}`;
     }
