@@ -18,6 +18,7 @@ export namespace Plugin {
      * For novel without pages only
      */
     page?: string;
+    scanlator?: string | string[];
   };
   export type NovelItem = {
     name: string;
