@@ -7,7 +7,7 @@
   "scripts": {
     "clean:multisrc": "node scripts/clean-multisrc.js",
     "dev": "vite",
-    "dev:start": "node ./plugins/multisrc/generate-multisrc-plugins.js && node scripts/generate-plugin-index.js && vite",
+    "dev:start": "node ./plugins/multisrc/generate-multisrc-plugins.js && vite",
     "build:multisrc": "node ./plugins/multisrc/generate-multisrc-plugins.js",
     "build:compile": "npx tsc --project tsconfig.production.json --outDir .tsc-out && node scripts/build-plugins.js",
     "build:webviews": "node scripts/build-webviews.js",

@@ -6,7 +6,7 @@
   "main": "dist-electron/main/main.js",
   "type": "module",
   "scripts": {
-    "dev": "cd .. && node ./plugins/multisrc/generate-multisrc-plugins.js && node scripts/generate-plugin-index.js && cd electron && vite",
+    "dev": "cd .. && node ./plugins/multisrc/generate-multisrc-plugins.js && cd electron && vite",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },

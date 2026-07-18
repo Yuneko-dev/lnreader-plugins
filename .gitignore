@@ -16,11 +16,13 @@ public/static/src/**/*.js
 .DS_Store
 dist
 total.svg
-src/plugins/index.ts
 .history
 broken-sites-report.json
 electron/dist-electron
 .tsc-out
 
-# LLM skills
+# LLM
 .agent/
+.agents/
+.claude/
+.cursor/
