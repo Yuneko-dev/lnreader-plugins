@@ -1,0 +1,1 @@
+(()=>{var o=document.querySelector("#chapter-comments"),e=document.querySelector("#shadow-host");if(o&&e){let t=e.attachShadow({mode:"open"});document.querySelectorAll('style, link[rel="stylesheet"]').forEach(c=>{t.appendChild(c.cloneNode(!0))}),t.appendChild(o),e.setAttribute("id","chapter-comments")}})();
